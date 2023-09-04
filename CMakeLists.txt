@@ -81,6 +81,10 @@ fetch_content_macro(fmt https://github.com/fmtlib/fmt.git 10.1.1)
 list(APPEND MUSE_INCLUDE_DIRS "${fmt_SOURCE_DIR}/include")
 list(APPEND MUSE_LIBRARIES fmt)
 
+fetch_content_macro(glm https://github.com/g-truc/glm 0.9.9.8)
+
+list(APPEND MUSE_INCLUDE_DIRS "${glm_SOURCE_DIR}")
+
 if(${MUSE_COMPILER} MATCHES "MSVC")
     list(APPEND MUSE_ARGS "/WX" "/Wall" "/O2")
 
