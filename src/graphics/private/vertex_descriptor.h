@@ -8,8 +8,8 @@ namespace muse
     /** Enum for every vertex element type */
     enum class VertexElementType : std::uint8_t
     {
-        FLOAT2
-        FLOAT3
+        FLOAT2,
+        FLOAT3,
         FLOAT4
     };
 
@@ -73,15 +73,16 @@ namespace muse
          *  @param types All of element types.
          * 
         */
-        explicit VertexDescriptor(const std::vector<VertexElementType>& types)
-            : handle_(0)
+        explicit VertexDescriptor(const std::initializer_list<VertexElementType>& types)
+            : size_(0)
+            , elements_()
         {
             auto offset = 0u;
 
             for(const auto& type : types)
             {
                 VertexElement element{type, offset};
-                elements_.emplace(std::begin(elements_) + elements.size(), element);
+                elements_.emplace(std::begin(elements_) + elements_.size(), element);
                 offset += element.size;
             }
         }
@@ -152,5 +153,14 @@ namespace muse
 
         /** Array */
         std::vector<VertexElement> elements_;
+    };
+
+    /** Default vertex descriptor */
+    inline VertexDescriptor DefaultVertexDescriptor{
+        {VertexElementType::FLOAT3},
+        {VertexElementType::FLOAT3},
+        {VertexElementType::FLOAT2},
+        {VertexElementType::FLOAT3},
+        {VertexElementType::FLOAT3}
     };
 }
