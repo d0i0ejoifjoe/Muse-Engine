@@ -54,4 +54,40 @@ namespace muse
 
         glBindVertexArray(0);
     }
+
+    void Mesh::set_cast_shadows(bool cast_shadows)
+    {
+        cast_shadows_ = cast_shadows;
+    }
+
+    bool Mesh::cast_shadows() const
+    {
+        return cast_shadows_;
+    }
+
+    Transform Mesh::transform() const
+    {
+        return transform_;
+    }
+
+    void Mesh::set_transform(const Transform& transform)
+    {
+        transform_ = transform;
+    }
+
+    void Mesh::set_translation(const glm::vec3& translation)
+    {
+        transform_.set_translation(translation);
+    }
+
+    void Mesh::set_rotation(const glm::quat& rotation)
+    {
+        transform_.set_rotation(rotation);
+    }
+
+    void Mesh::set_scale(const glm::vec3& scale)
+    {
+        transform_.set_scale(scale);
+    }
+
 }

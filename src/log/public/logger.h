@@ -1,6 +1,7 @@
 #pragma once
 
 #include "formatter.h"
+#include "format.h"
 
 #include <memory>
 #include <optional>
@@ -73,7 +74,7 @@ namespace muse
                  const std::string& message,
                  Args&& ...args)
         {
-            auto format_message = fmt::format(message, std::forward<Args>(args)...);
+            auto format_message = format(message, std::forward<Args>(args)...);
 
             log(level, category, filename, line, log_file, format_message);
         }

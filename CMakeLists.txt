@@ -8,6 +8,9 @@ include(FetchContent)
 
 add_library(${PROJECT_NAME} STATIC)
 
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_raw_string_literals)
+
 option(MUSE_DEBUG "Whether build muse in debug" ON)
 option(MUSE_BUILD_SAMPLES "Whether build sample projects" ON)
 

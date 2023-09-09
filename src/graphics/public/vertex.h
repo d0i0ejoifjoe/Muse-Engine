@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include "utils/public/include_glm.h"
 
 namespace muse
 {

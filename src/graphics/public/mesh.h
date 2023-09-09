@@ -5,6 +5,7 @@
 
 #include "vertex.h"
 #include "buffer.h"
+#include "transform.h"
 
 namespace muse
 {
@@ -52,6 +53,70 @@ namespace muse
         */
         void bind();
 
+        /**
+         * 
+         *  Get whether mesh casts shadows.
+         * 
+         *  @return True if it is otherwise false.
+         * 
+        */
+        bool cast_shadows() const;
+
+        /**
+         * 
+         *  Get mesh transformation.
+         * 
+         *  @return Transform.
+         * 
+        */
+        Transform transform() const;
+
+        /**
+         * 
+         *  Set whether mesh will cast shadows.
+         * 
+         *  @param cast_shadows Cast shadows.
+         * 
+        */
+        void set_cast_shadows(bool cast_shadows);
+
+        /**
+         * 
+         *  Set mesh transform.
+         * 
+         *  @param transform Transform.
+         * 
+        */
+        void set_transform(const Transform& transform);
+
+        /**
+         * 
+         *  Set translation of mesh.
+         * 
+         *  @param translation Translation.
+         * 
+         * 
+        */
+        void set_translation(const glm::vec3& translation);
+
+        /**
+         * 
+         *  Set rotation of mesh.
+         * 
+         *  @param rotation Rotation.
+         *  
+        */
+        void set_rotation(const glm::quat& rotation);
+
+        /**
+         * 
+         *  Set scale of mesh.
+         * 
+         *  @param scale Scale. 
+         * 
+        */
+        void set_scale(const glm::vec3& scale);
+        
     private:
         /**
          * 
@@ -68,5 +133,11 @@ namespace muse
 
         /** VAO handle */
         GLuint handle_;
+
+        /** Whether the mesh will cast shadows */
+        bool cast_shadows_;
+
+        /** Mesh transform */
+        Transform transform_;
     };
 }
