@@ -10,7 +10,8 @@ namespace muse
     {
         FLOAT2,
         FLOAT3,
-        FLOAT4
+        FLOAT4,
+        INT4,
     };
 
     /**
@@ -39,6 +40,7 @@ namespace muse
             case VertexElementType::FLOAT2: count = 2; size = sizeof(float) * count; break;
             case VertexElementType::FLOAT3: count = 3; size = sizeof(float) * count; break;
             case VertexElementType::FLOAT4: count = 4; size = sizeof(float) * count; break;
+            case VertexElementType::INT4: count = 4; size = sizeof(std::uint32_t) * count; break;
             }
         }
 
@@ -159,8 +161,11 @@ namespace muse
     inline VertexDescriptor DefaultVertexDescriptor{
         {VertexElementType::FLOAT3},
         {VertexElementType::FLOAT3},
+        {VertexElementType::FLOAT4},
         {VertexElementType::FLOAT2},
         {VertexElementType::FLOAT3},
-        {VertexElementType::FLOAT3}
+        {VertexElementType::FLOAT3},
+        {VertexElementType::INT4},
+        {VertexElementType::FLOAT4}
     };
 }

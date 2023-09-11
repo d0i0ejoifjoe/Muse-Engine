@@ -55,14 +55,14 @@ namespace muse
         glBindVertexArray(0);
     }
 
-    void Mesh::set_cast_shadows(bool cast_shadows)
+    void Mesh::set_receive_shadows(bool receive_shadows)
     {
-        cast_shadows_ = cast_shadows;
+        receive_shadows_ = receive_shadows;
     }
 
-    bool Mesh::cast_shadows() const
+    bool Mesh::receive_shadows() const
     {
-        return cast_shadows_;
+        return receive_shadows_;
     }
 
     Transform Mesh::transform() const

@@ -1,5 +1,42 @@
 #include "graphics/public/transform.h"
 
+glm::vec3 lerp(const glm::vec3& a, const glm::vec3& b, float alpha)
+{
+    return a * (1.0f - alpha) + alpha * b;
+}
+
+glm::quat slerp(const glm::quat& a, const glm::quat& b, float alpha)
+{
+    auto dot = glm::dot(a, b);
+
+    float theta = 0.0f;
+    float st = 0.0f;
+    float sut = 0.0f;
+    float sout = 0.0f;
+    float coeff1 = 0.0f;
+    float coeff2 = 0.0f;
+
+    alpha = alpha / 2.0f;
+
+    theta = std::acos(dot);
+    
+    if(theta < 0.0f)
+    {
+        theta = -theta;
+    }
+    
+    st = std::sin(theta);
+    sut = std::sin(alpha * theta);
+    sout = std::sin((1.0f - alpha) * theta);
+    coeff1 = sout / st;
+    coeff2 = sut / st;
+
+    return glm::normalize(glm::quat{a.w * coeff1 + b.w * coeff2,
+                                    a.x * coeff1 + b.x * coeff2,
+                                    a.y * coeff1 + b.y * coeff2,
+                                    a.z * coeff1 + b.z * coeff2});
+}
+
 namespace muse
 {
     Transform::Transform(const glm::vec3& translation,
@@ -9,6 +46,15 @@ namespace muse
         , rotation_(rotation)
         , scale_(scale)
     {
+    }
+
+    Transform Transform::interpolate(const Transform& other, float alpha) const
+    {
+        return Transform{
+            lerp(translation_, other.translation_, alpha),
+            slerp(rotation_, other.rotation_, alpha),
+            lerp(scale_, other.scale_, alpha)
+        };
     }
 
     Transform::Transform(const glm::mat4& m)

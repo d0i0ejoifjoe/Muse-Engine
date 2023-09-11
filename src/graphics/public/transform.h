@@ -34,8 +34,20 @@ namespace muse
          *  @param m Matrix.
          * 
         */
-        Transform(const glm::mat4& m);
+        explicit Transform(const glm::mat4& m);
 
+        /**
+         * 
+         *  Interpolate between two transformations.
+         * 
+         *  @param other Other transformation to interpolate with.
+         *  @param alpha Amount of interpolation.
+         * 
+         *  @return Result of interpolation.
+         * 
+        */
+        Transform interpolate(const Transform& other, float alpha) const;
+        
         /**
          * 
          *  Get matrix.

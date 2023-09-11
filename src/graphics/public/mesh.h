@@ -55,12 +55,12 @@ namespace muse
 
         /**
          * 
-         *  Get whether mesh casts shadows.
+         *  Get whether mesh receives shadows.
          * 
          *  @return True if it is otherwise false.
          * 
         */
-        bool cast_shadows() const;
+        bool receive_shadows() const;
 
         /**
          * 
@@ -75,10 +75,10 @@ namespace muse
          * 
          *  Set whether mesh will cast shadows.
          * 
-         *  @param cast_shadows Cast shadows.
+         *  @param receive_shadows Cast shadows.
          * 
         */
-        void set_cast_shadows(bool cast_shadows);
+        void set_receive_shadows(bool receive_shadows);
 
         /**
          * 
@@ -134,8 +134,8 @@ namespace muse
         /** VAO handle */
         GLuint handle_;
 
-        /** Whether the mesh will cast shadows */
-        bool cast_shadows_;
+        /** Whether the mesh will receive shadows from light */
+        bool receive_shadows_;
 
         /** Mesh transform */
         Transform transform_;
