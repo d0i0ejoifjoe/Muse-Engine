@@ -39,7 +39,7 @@ namespace muse
 
         /**
          * 
-         *  Write indices to index buffer.
+         *  Write indics to element buffer.
          * 
          *  @param index_data Data to write.
          * 
@@ -117,6 +117,15 @@ namespace muse
         */
         void set_scale(const glm::vec3& scale);
         
+        /**
+         * 
+         *  Get element count.
+         * 
+         *  @return Count.
+         * 
+        */
+        std::size_t element_count() const;
+
     private:
         /**
          * 
@@ -139,5 +148,8 @@ namespace muse
 
         /** Mesh transform */
         Transform transform_;
+
+        /** Element count */
+        std::size_t element_count_;
     };
 }

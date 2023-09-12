@@ -24,6 +24,8 @@ namespace muse
     void Mesh::write_data(const std::vector<std::uint32_t>& index_data)
     {
         ibo_.write(index_data);
+        element_count_ += index_data.size();
+        
         setup();
     }
 
@@ -90,4 +92,8 @@ namespace muse
         transform_.set_scale(scale);
     }
 
+    std::size_t Mesh::element_count() const
+    {
+        return element_count_;
+    }
 }
