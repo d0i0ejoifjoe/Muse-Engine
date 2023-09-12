@@ -3,6 +3,7 @@
 #include "glad.h"
 
 #include <cstddef>
+#include <cassert>
 #include <vector>
 
 namespace muse
