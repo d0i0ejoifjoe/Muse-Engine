@@ -15,7 +15,7 @@ namespace muse
      * 
      *  Class that represents a skeleton.
      *  Skeleton is responsible for updating bones at given time,
-     *  storing transforms that need to be sumbit to vertex shader and
+     *  storing transforms that need to be submit to vertex shader and
      *  setting up indices.
      * 
     */

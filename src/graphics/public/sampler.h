@@ -44,7 +44,9 @@ namespace muse
 
     /**
      * 
-     *  Class that represents a sampler.
+     *  This class tells us how to sample a texture.
+     *  and it helps us to manage the OpenGL handle that we get when creating sampler.
+     *  Handle it's an id of sampler on GPU.
      * 
     */
     class Sampler

@@ -18,6 +18,10 @@ namespace muse
     /**
      * 
      *  Class that represents a camera.
+     *  Camera is just a set of matrices that helps us transform vertices in vertex shader.
+     *  First we used view matrix to transform ourselves into view space and then we use
+     *  projection matrix to transform us into clip space then perspective division, clipping and so on.
+     *  So in layman's terms this class helps us to make things look more natural on screen.
      * 
     */
     class Camera

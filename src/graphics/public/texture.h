@@ -19,7 +19,9 @@ namespace muse
 
     /**
      * 
-     *  Class that represents a texture.
+     *  This class represents a set of pixels or as they called "texels (texture pixels)"
+     *  these texels are stored on GPU this class helps us to manage the OpenGL handle and bindless handle that we get when creating texture.
+     *  Handle it's a way to control the texture while bindless handle it's just id of sampler on GPU.
      * 
     */
     class Texture

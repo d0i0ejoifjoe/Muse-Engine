@@ -14,6 +14,12 @@ namespace muse
     /**
      * 
      *  Class that represents a mesh.
+     *  A Mesh it's just a set of vertices and indices but in this case
+     *  it's has it's own model matrix which is called "transform"
+     *  it's has a boolean that helps us determine whether
+     *  mesh should receive shadow from light
+     *  and lastly it's own skeleton that we use in render function
+     *  to submit bone transformations.
      * 
     */
     class Mesh

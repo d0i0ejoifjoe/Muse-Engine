@@ -4,6 +4,15 @@
 
 namespace muse
 {
+    /**
+     * 
+     *  This class defines a transformation in 3D space
+     *  which has translation, rotation, scale
+     *  Translation - where to move object from origin of the world.
+     *  Rotation - simply the rotation of object.
+     *  Scale - scale of the object.
+     * 
+    */
     class Transform
     {
     public:

@@ -11,7 +11,10 @@ namespace muse
 
     /**
      * 
-     *  Class that represents a cube map.
+     *  Class that represents a cubemap.
+     *  This class represents cube of which every side has it's own texture
+     *  the texels of each side are stored on GPU and this class helps us to manage the OpenGL handle and bindless handle that we get when creating cubemap.
+     *  Handle it's a way to control the cubemap while bindless handle it's just id of sampler on GPU.
      * 
     */
     class CubeMap

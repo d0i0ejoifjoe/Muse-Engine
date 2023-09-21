@@ -11,6 +11,8 @@ namespace muse
     /**
      * 
      *  Structure that encapsulates all of vertex components.
+     *  Position, normal, color, texture coordinates, tangent, bitangent and lastly weights
+     *  to determine how much influence has a bone on vertex. 
      * 
     */
     struct Vertex

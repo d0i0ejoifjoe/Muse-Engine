@@ -10,7 +10,9 @@ namespace muse
 {
     /**
      * 
-     *  Class that represents a GUI window.
+     *  This window class it's a game window
+     *  which has it's own OpenGL context and will
+     *  be created in fullscreen mode. 
      * 
     */
     class Window

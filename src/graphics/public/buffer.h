@@ -9,7 +9,10 @@ namespace muse
 {
     /**
      * 
-     *  Class that represents GPU buffer. 
+     *  Class that represents GPU buffer.
+     *  Used to store all kinds of data, like vertices, indices.
+     *  and UBOs (Uniform buffer objects) is used to write to shaders
+     *  like camera projection and view matrix, bone data, etc.
      * 
     */
     template<GLenum Target, GLenum Usage>
