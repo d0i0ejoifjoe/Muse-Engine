@@ -31,6 +31,7 @@ struct AssimpNode
  *  @param node Const pointer to node in assimp heirarchy.
  *  @param skeleton Pointer to skeleton (this).
  *  @param parent_transform Parent transformation.
+ *  @param root_inverse_transform Inverse root transform matrix.
  *  @param transforms Reference to transforms vector.
  *  @param time Current time.
  * 
@@ -39,6 +40,7 @@ void update_transforms(const AssimpNode* node,
                        muse::Skeleton* skeleton,
                        std::vector<glm::mat4>& transforms,
                        glm::mat4& parent_transform,
+                       const glm::mat4& root_inverse_transform,
                        std::chrono::milliseconds time)
 {
     std::string name = node->name;
@@ -55,12 +57,12 @@ void update_transforms(const AssimpNode* node,
     if(bone)
     {
         auto index = bone->index;
-        transforms[index] = global_transform * bone->offset; 
+        transforms[index] = root_inverse_transform * global_transform * bone->offset; 
     }
 
     for(auto i = 0u; i < node->children.size(); i++)
     {
-        update_transforms(&node->children[i], skeleton, transforms, global_transform, time);
+        update_transforms(&node->children[i], skeleton, transforms, global_transform, root_inverse_transform, time);
     }
 }
 
@@ -87,8 +89,9 @@ namespace muse
     void Skeleton::update(std::chrono::milliseconds time)
     {
         glm::mat4 identity{1.0f};
+        const auto inverse = glm::inverse(root_->transform);
 
-        update_transforms(root_, this, transforms_, identity, time);
+        update_transforms(root_, this, transforms_, identity, inverse, time);
     }
 
     const std::vector<Bone>& Skeleton::bones() const
