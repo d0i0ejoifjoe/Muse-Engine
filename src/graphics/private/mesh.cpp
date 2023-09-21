@@ -1,13 +1,19 @@
 #include "graphics/public/mesh.h"
+#include "graphics/public/skeleton.h"
 #include "graphics/private/vertex_descriptor.h"
 
 namespace muse
 {
     Mesh::Mesh(const std::vector<Vertex>& vertex_data,
-               const std::vector<std::uint32_t>& index_data)
+               const std::vector<std::uint32_t>& index_data,
+               Skeleton* skeleton)
         : vbo_(sizeof(Vertex) * vertex_data.size())
         , ibo_(sizeof(std::uint32_t) * index_data.size())
         , handle_(0)
+        , receive_shadows_(true)
+        , transform_(Transform{})
+        , element_count_(0)
+        , skeleton_(skeleton)
     {
         glGenVertexArrays(1, &handle_);
 
@@ -95,5 +101,10 @@ namespace muse
     std::size_t Mesh::element_count() const
     {
         return element_count_;
+    }
+
+    Skeleton* Mesh::skeleton() const
+    {
+        return skeleton_;
     }
 }

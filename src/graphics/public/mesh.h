@@ -9,6 +9,8 @@
 
 namespace muse
 {
+    class Skeleton;
+
     /**
      * 
      *  Class that represents a mesh.
@@ -23,10 +25,12 @@ namespace muse
          * 
          *  @param vertex_data Initial vertices of mesh.
          *  @param index_data Initial indices of mesh.
+         *  @param skeleton Pointer to skeleton of mesh used for animations.
          * 
         */
         Mesh(const std::vector<Vertex>& vertex_data,
-             const std::vector<std::uint32_t>& index_data);
+             const std::vector<std::uint32_t>& index_data,
+             Skeleton* skeleton);
 
         /**
          * 
@@ -126,6 +130,15 @@ namespace muse
         */
         std::size_t element_count() const;
 
+        /**
+         * 
+         *  Get skeleton of mesh used to sumbit the bone transforms to GPU.
+         *
+         *  @return Pointer to skeleton.
+         *  
+        */
+        Skeleton* skeleton() const;
+
     private:
         /**
          * 
@@ -151,5 +164,8 @@ namespace muse
 
         /** Element count */
         std::size_t element_count_;
+
+        /** Skeleton */
+        Skeleton* skeleton_;
     };
 }

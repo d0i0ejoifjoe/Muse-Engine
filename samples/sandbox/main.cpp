@@ -25,8 +25,6 @@ int main()
                                "Rotation: {}\n"
                                "Scale: {}\n", mat, transform.translation(), transform.rotation(), transform.scale());
 
-    std::cout << transform.rotation().w << " " << transform.rotation().y << std::endl;
-
     muse::Transform transform1{mat1};
 
     LOG_INFO(Interpolation, "\nTranslation: {}\n"

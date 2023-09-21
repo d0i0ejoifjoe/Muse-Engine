@@ -7,7 +7,7 @@ namespace muse
     Camera::Camera(CameraType type, Window& window, float depth)
         : yaw_(-pi / 2.0f)
         , pitch_(0.0f)
-        , fov(45.0f)
+        , fov_(45.0f)
         , width_(0.0f)
         , height_(0.0f)
         , depth_(depth)
@@ -35,11 +35,11 @@ namespace muse
     {
         if(type_ == CameraType::ORTHOGRAPHIC)
         {
-            projection_ = glm::ortho(-width_, width_, -height_, height_, -depth, depth);
+            projection_ = glm::ortho(-width_, width_, -height_, height_, -depth_, depth_);
         }
         else if(type_ == CameraType::PERSPECTIVE)
         {
-            projection_ = glm::perspective(glm::radians(fov_), width_ / height_, 0.1f, depth);
+            projection_ = glm::perspective(glm::radians(fov_), width_ / height_, 0.1f, depth_);
         }
     }
 

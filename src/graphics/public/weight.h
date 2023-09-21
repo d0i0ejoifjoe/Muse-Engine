@@ -1,24 +1,21 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 
 namespace muse
 {
     /**
      * 
-     *  Structure that encapsulates all of need data for a weight.
+     *  Structure that encapsulates all of needed data for a weight.
+     *  Weight is used in vertex shader to help us determine how much influence bone has on vertex.
      * 
     */
     struct Weight
     {
+        /** Influence of bone. */
+        float influence = 0.0f;
+
         /** ID of vertex. */
-        std::uint32_t vertex = 0;
-
-        /** Influence on vertex. */
-        float weight = 0.0f;
-
-        /** Name of bone */
-        std::string name = "";
+        std::int32_t id = 0;
     };
 }

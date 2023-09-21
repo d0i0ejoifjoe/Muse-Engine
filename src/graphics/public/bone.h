@@ -1,100 +1,51 @@
 #pragma once
 
-#include "transform.h"
-
-#include <string>
+#include <cstdint>
+#include "utils/public/include_glm.h"
 
 namespace muse
 {
     /**
      * 
-     *  Class that represents a bone.
+     *  Structure that encapsulates bone data like, name, index, offset.
+     *  Index is used to find this bone transformation in vertex shader and will be set by skeleton class while
+     *  the offset matrix is used to transform vertex from local space to bone space
      * 
     */
-    class Bone
+    struct Bone
     {
-    public:
         /**
          * 
-         *  Create a root bone.  
+         *  Create an empty (invalid) bone.
+         * 
+        */
+        Bone()
+            : Bone("", glm::mat4{1.0f})
+        {
+        }
+
+        /**
+         * 
+         *  Create a bone.
          * 
          *  @param name Name of bone.
          *  @param offset Offset matrix.
-         *  @param transform Bone transformation.
          * 
         */
-        Bone(std::string_view name, const glm::mat4& offset, const Transform& transform);
+        Bone(std::string_view name, const glm::mat4& offset)
+            : name(name)
+            , index(-1)
+            , offset(offset)
+        {
+        }
 
-        /**
-         * 
-         *  Create bone.
-         * 
-         *  @param parent Parent bone.
-         *  @param name Name of this bone.
-         *  @param offset Offset matrix.
-         *  @param transform Bone transformation.
-         * 
-        */
-        Bone(Bone* parent, std::string_view name, const glm::mat4& offset, const Transform& transform);
+        /** Name of bone */
+        std::string name;
 
-        /**
-         * 
-         *  Get name of bone.
-         * 
-         *  @return Bone name.
-         * 
-        */
-        std::string name() const;
-
-        /**
-         * 
-         *  Get bone parent.
-         * 
-         *  @return Pointer to bone's parent.
-         * 
-         *  @note If pointer in nullptr means that's root bone.
-         * 
-        */
-        const Bone* parent() const;
-
-        /**
-         * 
-         *  Get offset matrix.
-         * 
-         *  @return Offset matrix.
-         * 
-        */
-        glm::mat4 offset() const;
-
-        /**
-         * 
-         *  Get transform of bone.
-         * 
-         *  @return Transform.
-         * 
-        */
-        Transform transform() const;
-
-        /**
-         * 
-         *  Set transform of bone.
-         * 
-         *  @param transform New transform.
-         * 
-        */
-        void set_transform(const Transform& transform);
-        
-    private:
-        /** Parent. */
-        Bone* parent_;
-
-        /** Name of bone. */
-        std::string name_;
-
-        /** Offset. */
-        glm::mat4 offset_;
-
-        /** Transformation of a bone. */
-        Transform transform_;
+        /** Index of bone transformation */
+        std::int32_t index;
+    
+        /** Offset matrix.*/
+        glm::mat4 offset;
     };
 }
