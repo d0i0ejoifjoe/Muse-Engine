@@ -1,22 +1,15 @@
 #pragma once
 
 #include "bone.h"
-#include "keyframe.h"
-
-#include <chrono>
-#include <unordered_map>
-#include <vector>
-
-struct AssimpNode;
 
 namespace muse
 {
+    class Animation;
+
     /**
      * 
-     *  Class that represents a skeleton.
-     *  Skeleton is responsible for updating bones at given time,
-     *  storing transforms that need to be submit to vertex shader and
-     *  setting up indices.
+     *  Class that helps us update bones transformations
+     *  and query for them.
      * 
     */
     class Skeleton
@@ -24,74 +17,77 @@ namespace muse
     public:
         /**
          * 
-         *  Create skeleton.
+         *  Create a skeleton.
          * 
-         *  @param bones Bones of skeleton.
-         *  @param root Root node of node hierarchy.
-         *  @param frames Map with key as bone name and value as series of keyframes that sorted by time.
-         * 
-        */ 
-        explicit Skeleton(const std::vector<Bone>& bones,
-                          const AssimpNode& root,
-                          const std::unordered_map<std::string, std::vector<Keyframe>>& frames);
-
-        /**
-         * 
-         *  Update all of bone transformations.
-         * 
-         *  @param time Current time in animation.
+         *  @param root_bone Root bone that contains all other bones as their children.
+         *  @param animation Animation that's responsible for the skeleton.
          * 
         */
-        void update(std::chrono::milliseconds time);
+        Skeleton(const Bone& root_bone,
+                 Animation* animation);
 
         /**
          * 
-         *  Get bone transforms.
+         *  Get root bone.
          * 
-         *  @return Const reference to bone transforms.
+         *  @return Root bone pointer.
+         * 
+        */
+        const Bone* root_bone() const;
+
+        /**
+         * 
+         *  Get transforms.
+         * 
+         *  @return Transforms.
          * 
         */
         const std::vector<glm::mat4>& transforms() const;
 
         /**
          * 
-         *  Get bones.
-         * 
-         *  @return Const reference to bones array.
+         *  Get animation.
+         *  
+         *  @return Pointer to animation.
          * 
         */
-        const std::vector<Bone>& bones() const;
+        Animation* animation() const;
 
         /**
          * 
-         *  Find bone.
-         *  
+         *  Update all bone transformations.
+         * 
+        */
+        void update();
+
+        /**
+         * 
+         *  Find bone by name.
+         * 
          *  @param name Name of bone.
+         * 
+         *  @return Nullptr if bone doesn't exist, pointer to bone otherwise.
          * 
         */
         Bone* find_bone(std::string_view name);
 
         /**
          * 
-         *  Get transform from frames map at given time.
+         *  Set skeleton owning animation.
          * 
-         *  @param name Name of bone to find calculate transform of.
-         *  @param time Current time in animation (provided by update() in which time is provided by animation).
+         *  @param animation Pointer to animation.
          * 
         */
-        Transform transform(const std::string& name, std::chrono::milliseconds time);
+        void set_animation(Animation* animation);
 
     private:
-        /** Bones. */
-        std::vector<Bone> bones_;
+        /** Root bone. */
+        Bone root_bone_;
 
-        /** Root node. */
-        const ::AssimpNode* root_;
-
-        /** Transforms. */
+        /** Transformations. */
         std::vector<glm::mat4> transforms_;
-        
-        /** Frame map. */
-        std::unordered_map<std::string, std::vector<Keyframe>> frames_;
+
+        /** Animation that's responsible for skeleton. */
+        Animation* animation_;
     };
 }

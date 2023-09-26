@@ -1,23 +1,21 @@
 #pragma once
 
-#include <chrono>
-
 #include "transform.h"
 
 namespace muse
 {
     /**
      * 
-     *  Structure that encapsulates all of data needed for key frame.
-     *  Keyframe is just a transformation that is applied at given time in animation.
+     *  Structure that encapsulates all of data for keyframe.
+     *  Keyframe it's just a transformation that is applied at given time. 
      * 
     */
     struct Keyframe
     {
-        /** Time in animation */
-        std::chrono::milliseconds time;
+        /** Time of keyframe. */
+        float time;
 
-        /** Keyframe transformation */
+        /** Transformation to apply at this time. */
         Transform transform;
     };
 }

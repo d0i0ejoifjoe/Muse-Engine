@@ -26,7 +26,7 @@ namespace muse
          *  @param size Initial size.
          * 
         */
-        Buffer(std::size_t size)
+        explicit Buffer(std::size_t size)
             : size_(size)
             , offset_(0)
             , handle_(0)
@@ -61,6 +61,10 @@ namespace muse
             glDeleteBuffers(1, &handle_);
         }
 
+        /** Deleted */
+        Buffer(const Buffer&) = delete;
+        Buffer& operator=(const Buffer&) = delete;
+        
         /**
          * 
          *  Get size of buffer.

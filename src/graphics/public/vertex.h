@@ -3,6 +3,8 @@
 #include "utils/public/include_glm.h"
 #include "weight.h"
 
+#include <array>
+
 namespace muse
 {
     /** Maximum weights for vertex */
@@ -28,7 +30,7 @@ namespace muse
          *  @param tex_coord Texture coordinate of vertex.
          *  @param tangent Tangent of vertex.
          *  @param bitangent Bitangent of vertex.
-         *  @param weights Weights of bones for vertex.
+         *  @param weights Weights of vertex.
          * 
         */
         Vertex(const glm::vec3& position,
@@ -37,7 +39,7 @@ namespace muse
                const glm::vec2& tex_coord,
                const glm::vec3& tangent,
                const glm::vec3& bitangent,
-               const std::array<Weight, 4>& weights)
+               const std::array<Weight, max_weights>& weights)
             : position(position)
             , normal(normal)
             , color(color)
@@ -67,6 +69,6 @@ namespace muse
         glm::vec3 bitangent;
 
         /** Weights */
-        std::array<Weight, 4> weights;
+        std::array<Weight, max_weights> weights;
     };
 }

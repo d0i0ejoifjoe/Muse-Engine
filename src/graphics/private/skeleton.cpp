@@ -1,102 +1,60 @@
 #include "graphics/public/skeleton.h"
+#include "graphics/public/animation.h"
 
-#include <algorithm>
-
-/**
- * 
- *  Because of assimp nature of node hierarchy and that aiNodeAnim
- *  has it name string of bone that it is applied to, we can check if bone is in our bone hierarchy
- *  and if it is we can calculate aiNodeAnim transformation in current time of animation and apply it to bone,
- *  else we apply the transform that is in this structure and then we traverse the "children" vector and do this
- *  again and again until we end up with final transform that we add at position of bone in transforms_ vector in skeleton
- *  and we need to multiply it with offset matrix of bone.
- * 
-*/
-struct AssimpNode
+void update_helper(muse::Animation* animation,
+                   std::vector<glm::mat4>& transforms,
+                   const glm::mat4& root_inverse_transform,
+                   muse::Bone* bone,
+                   glm::mat4& parent_transform)
 {
-    /** Transformation of node */
-    glm::mat4 transform;
+    glm::mat4 bone_transform = bone->transform; 
 
-    /** Name of bone */
-    std::string name;
-
-    /** All of children (if node is single without vector means it is root node) */
-    std::vector<AssimpNode> children;
-};
-
-/**
- * 
- *  Recursive helper function to update transformations.
- * 
- *  @param node Const pointer to node in assimp heirarchy.
- *  @param skeleton Pointer to skeleton (this).
- *  @param parent_transform Parent transformation.
- *  @param root_inverse_transform Inverse root transform matrix.
- *  @param transforms Reference to transforms vector.
- *  @param time Current time.
- * 
-*/
-void update_transforms(const AssimpNode* node,
-                       muse::Skeleton* skeleton,
-                       std::vector<glm::mat4>& transforms,
-                       glm::mat4& parent_transform,
-                       const glm::mat4& root_inverse_transform,
-                       std::chrono::milliseconds time)
-{
-    std::string name = node->name;
-    glm::mat4 node_transform = node->transform;
-
-    auto* bone = skeleton->find_bone(name);
-    if(bone)
+    if(animation->frames_exist(bone->name))
     {
-        node_transform = skeleton->transform(name, time).matrix();
+        bone_transform = animation->transform(bone->name).matrix();        
     }
 
-    glm::mat4 global_transform = parent_transform * node_transform; 
-
-    if(bone)
+    glm::mat4 global_transform = parent_transform * bone_transform;
+    
+    transforms[bone->index] = root_inverse_transform * global_transform * bone->offset; 
+    
+    for(auto& children : bone->children)
     {
-        auto index = bone->index;
-        transforms[index] = root_inverse_transform * global_transform * bone->offset; 
+        update_helper(animation, transforms, root_inverse_transform, std::addressof(children), global_transform);
+    }
+}
+
+void find_bone_helper(std::string_view name,
+                      muse::Bone& bone,
+                      muse::Bone* out_bone)
+{
+    if(bone.name == name)
+    {
+        out_bone = std::addressof(bone);
     }
 
-    for(auto i = 0u; i < node->children.size(); i++)
+    if(!bone.children.empty())
     {
-        update_transforms(&node->children[i], skeleton, transforms, global_transform, root_inverse_transform, time);
+        for(auto& children : bone.children)
+        {
+            find_bone_helper(name, children, out_bone);
+        }
     }
 }
 
 namespace muse
 {
-    Skeleton::Skeleton(const std::vector<Bone>& bones,
-                       const AssimpNode& root,
-                       const std::unordered_map<std::string, std::vector<Keyframe>>& frames)
-        : bones_(bones)
-        , root_(std::addressof(root))
+    Skeleton::Skeleton(const Bone& root_bone,
+                       Animation* animation)
+        : root_bone_(root_bone)
         , transforms_(100)
-        , frames_(frames)
+        , animation_(animation)
     {
-        auto counter = 0u;
-
-        // Setup indices to then find bone transforms in vertex shader.
-        for(auto& bone : bones_)
-        {
-            bone.index = counter;
-            counter++;
-        }
     }
 
-    void Skeleton::update(std::chrono::milliseconds time)
+    const Bone* Skeleton::root_bone() const
     {
-        glm::mat4 identity{1.0f};
-        const auto inverse = glm::inverse(root_->transform);
-
-        update_transforms(root_, this, transforms_, identity, inverse, time);
-    }
-
-    const std::vector<Bone>& Skeleton::bones() const
-    {
-        return bones_;
+        return std::addressof(root_bone_);
     }
 
     const std::vector<glm::mat4>& Skeleton::transforms() const
@@ -104,46 +62,29 @@ namespace muse
         return transforms_;
     }
 
-    Bone* Skeleton::find_bone(std::string_view name)
+    Animation* Skeleton::animation() const
     {
-        auto it = std::find_if(std::begin(bones_), std::end(bones_), [&](const auto& bone)
-        {
-            return bone.name == name;
-        });
-
-        if(it == std::cend(bones_))
-        {
-            return nullptr;
-        }
-
-        return std::to_address(it);
+        return animation_;
     }
 
-    Transform Skeleton::transform(const std::string& name, std::chrono::milliseconds time)
+    void Skeleton::update()
     {
-        const auto& keyframes = frames_.find(name)->second;
+        auto identity = glm::mat4{1.0f};
+        const auto inverse = glm::inverse(root_bone_.transform);
+    
+        update_helper(animation_, transforms_, inverse, std::addressof(root_bone_), identity);
+    }
 
-        // find frame after current time because of it add 1 to begin iterator
-        auto end_frame = std::find_if(std::cbegin(keyframes) + 1, std::cend(keyframes), [&](const auto& keyframe){
-            return keyframe.time > time;
-        });
+    Bone* Skeleton::find_bone(std::string_view name)
+    {
+        Bone* bone = nullptr;
+        find_bone_helper(name, root_bone_, bone);
+        
+        return bone;
+    }
 
-        if(end_frame == std::cend(keyframes))
-        {
-            // past the last frame so use last frame.
-            end_frame--;
-        }
-
-        // get starting frame means go back a frame
-        auto start_frame = --end_frame;
-
-        // calculate how much we need to intepolate
-        const auto midway_length = time - start_frame->time;
-        const auto frames_diff = end_frame->time - start_frame->time;
-        const auto interpolation = static_cast<float>(midway_length.count()) / static_cast<float>(frames_diff.count());
-
-        // get start frame transform and interpolate.
-        const auto transform = start_frame->transform;
-        return transform.interpolate(end_frame->transform, interpolation);
+    void Skeleton::set_animation(Animation* animation)
+    {
+        animation_ = animation;
     }
 }

@@ -1,51 +1,58 @@
 #pragma once
 
-#include <cstdint>
 #include "utils/public/include_glm.h"
+
+#include <vector>
+#include <cstdint>
+#include <string>
 
 namespace muse
 {
     /**
      * 
-     *  Structure that encapsulates bone data like, name, index, offset.
-     *  Index is used to find this bone transformation in vertex shader and will be set by skeleton class while
-     *  the offset matrix is used to transform vertex from local space to bone space
+     *  Structure that encapsulates information about
+     *  that bone like it's offset matrix, transform matrix, name, index, etc. 
      * 
     */
     struct Bone
     {
         /**
          * 
-         *  Create an empty (invalid) bone.
-         * 
-        */
-        Bone()
-            : Bone("", glm::mat4{1.0f})
-        {
-        }
-
-        /**
-         * 
          *  Create a bone.
          * 
          *  @param name Name of bone.
          *  @param offset Offset matrix.
+         *  @param transform Transform matrix.
+         *  @param index Index of bone.
+         *  @param children All of it's children.
          * 
         */
-        Bone(std::string_view name, const glm::mat4& offset)
+        Bone(std::string_view name,
+             const glm::mat4& offset,
+             const glm::mat4& transform,
+             std::uint32_t index,
+             const std::vector<Bone>& children)
             : name(name)
-            , index(-1)
             , offset(offset)
+            , transform(transform)
+            , index(index)
+            , children(children)
         {
         }
 
-        /** Name of bone */
+        /** Name of bone. */
         std::string name;
 
-        /** Index of bone transformation */
-        std::int32_t index;
-    
-        /** Offset matrix.*/
+        /** Offset matrix. */
         glm::mat4 offset;
+
+        /** Transform matrix. */
+        glm::mat4 transform;
+
+        /** Index of bone. */
+        std::uint32_t index;
+
+        /** Children of this bone. */
+        std::vector<Bone> children;
     };
 }

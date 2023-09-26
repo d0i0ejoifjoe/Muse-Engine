@@ -14,6 +14,9 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_raw_string_literals)
 option(MUSE_DEBUG "Whether build muse in debug" ON)
 option(MUSE_BUILD_SAMPLES "Whether build sample projects" ON)
 
+set(ASSIMP_BUILD_TESTS FALSE CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL FALSE CACHE BOOL "" FORCE)
+
 set(MUSE_PLATFORM "")
 set(MUSE_COMPILER "")
 
@@ -87,6 +90,11 @@ list(APPEND MUSE_LIBRARIES fmt)
 fetch_content_macro(glm https://github.com/g-truc/glm 0.9.9.8)
 
 list(APPEND MUSE_INCLUDE_DIRS "${glm_SOURCE_DIR}")
+
+fetch_content_macro(assimp https://github.com/assimp/assimp.git v5.2.5)
+
+list(APPEND MUSE_INCLUDE_DIRS "${assimp_SOURCE_DIR}/include")
+list(APPEND MUSE_LIBRARIES assimp)
 
 if(${MUSE_COMPILER} MATCHES "MSVC")
     list(APPEND MUSE_ARGS "/WX" "/Wall" "/O2")

@@ -31,7 +31,7 @@ namespace muse
          * 
          *  @param vertex_data Initial vertices of mesh.
          *  @param index_data Initial indices of mesh.
-         *  @param skeleton Pointer to skeleton of mesh used for animations.
+         *  @param skeleton Skeleton of mesh.
          * 
         */
         Mesh(const std::vector<Vertex>& vertex_data,
@@ -138,10 +138,10 @@ namespace muse
 
         /**
          * 
-         *  Get skeleton of mesh used to sumbit the bone transforms to GPU.
-         *
-         *  @return Pointer to skeleton.
-         *  
+         *  Get skeleton of this mesh.
+         * 
+         *  @return Skeleton pointer.
+         * 
         */
         Skeleton* skeleton() const;
 
@@ -171,7 +171,7 @@ namespace muse
         /** Element count */
         std::size_t element_count_;
 
-        /** Skeleton */
+        /** Skeleton. */
         Skeleton* skeleton_;
     };
 }
