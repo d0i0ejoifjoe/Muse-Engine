@@ -9,12 +9,6 @@
 #include <cstdint>
 #include <unordered_map>
 
-struct Node
-{
-    std::string name;
-    glm::mat4 transform;
-}
-
 glm::mat4 convert_matrix(const aiMatrix4x4& m)
 {
     return glm::mat4{m.a1, m.a2, m.a3,
@@ -67,6 +61,14 @@ std::vector<muse::Vertex> process_vertices(const aiMesh* mesh)
     return vertices;
 }
 
+/**
+ * 
+ *  Find bone by name in mesh.
+ * 
+ *  @param name Name of bone.
+ *  @param mesh Mesh to find bone in.
+ * 
+*/
 const aiBone* find_bone(const aiString& name, const aiMesh* mesh)
 {
     for(auto i = 0u; i < mesh->mNumBones; i++)
@@ -81,6 +83,14 @@ const aiBone* find_bone(const aiString& name, const aiMesh* mesh)
     return nullptr;
 }
 
+/**
+ * 
+ *  Process all children of the given bone.
+ * 
+ *  @param bone Bone to process all of it's children.
+ *  @param mesh Mesh to find the children in.
+ * 
+*/
 std::vector<Bone> process_children(const aiBone* bone, const aiMesh* mesh)
 {
     auto node = bone->node;
@@ -150,6 +160,15 @@ const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh)
     return nullptr;
 }
 
+/**
+ * 
+ *  Setup weights of vertices.
+ * 
+ *  @param vertices Vertices to setup.
+ *  @param mesh Mesh to find the weights in.
+ *  @param bone_name_to_index Map that's has it's key as bone name and it's value as it's index.
+ * 
+*/
 void process_weights(std::vector<muse::Vertex>& vertices,
                      const aiMesh* mesh,
                      std::unordered_map<std::string, std::uint32_t>& bone_name_to_index)
@@ -166,6 +185,7 @@ void process_weights(std::vector<muse::Vertex>& vertices,
         }
     }
 }
+
 
 void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_name_to_index,
                         std::uint32_t& index,
