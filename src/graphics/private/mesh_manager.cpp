@@ -11,9 +11,10 @@
 
 glm::mat4 convert_matrix(const aiMatrix4x4& m)
 {
-    return glm::mat4{m.a1, m.a2, m.a3,
-                     m.b1, m.b2, m.b3,
-                     m.c1, m.c2, m.c3};
+    return glm::mat4{m.a1, m.a2, m.a3, m.a4,
+                     m.b1, m.b2, m.b3, m.b4,
+                     m.c1, m.c2, m.c3, m.c4,
+                     m.d1, m.d2, m.d3, m.d4};
 }
 
 glm::vec3 convert_vec(const aiVector3D& vec)
@@ -23,7 +24,7 @@ glm::vec3 convert_vec(const aiVector3D& vec)
 
 glm::vec4 convert_vec(const aiColor4D& vec)
 {
-    return glm::vec3{vec.x, vec.y, vec.z, vec.w};
+    return glm::vec4{vec.r, vec.g, vec.b, vec.a};
 }
 
 glm::vec2 convert_vec(const aiVector2D& vec)
@@ -44,18 +45,18 @@ std::vector<muse::Vertex> process_vertices(const aiMesh* mesh)
 
         if(mesh->HasVertexColors(0))
         {
-            texture_coordinates = convert_vec(mesh->mColors[0][i]);
+            color = convert_vec(mesh->mColors[0][i]);
         }
 
         if(mesh->HasTextureCoords(0))
         {
-            color = convert_vec(mesh->mTextureCoords[0][i]);
+            texture_coordinates = convert_vec(mesh->mTextureCoords[0][i]);
         }
 
         const auto tangent = convert_vec(mesh->mTangents[i]);
         const auto bitangent = convert_vec(mesh->mBitangents[i]); 
     
-        vertices.push_back(muse::Vertex{position, normal, color, texture_coordinates, tangent, bitangent});
+        vertices.emplace_back(position, normal, color, texture_coordinates, tangent, bitangent);
     }
 
     return vertices;
@@ -91,7 +92,7 @@ const aiBone* find_bone(const aiString& name, const aiMesh* mesh)
  *  @param mesh Mesh to find the children in.
  * 
 */
-std::vector<Bone> process_children(const aiBone* bone, const aiMesh* mesh)
+std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh)
 {
     auto node = bone->node;
 
@@ -100,7 +101,7 @@ std::vector<Bone> process_children(const aiBone* bone, const aiMesh* mesh)
         return {};
     }
 
-    std::vector<Bone> children{};
+    std::vector<muse::Bone> children{};
     for(auto i = 0u; i < node->mNumChildren; i++)
     {
         auto children_node = node->mChildren[i];
@@ -181,7 +182,7 @@ void process_weights(std::vector<muse::Vertex>& vertices,
         {
             auto weight = bone->mWeights[k];
             auto& vertex = vertices.at(weight.mVertexId);
-            vertex.weights.push_back(muse::Weight{bone_name_to_index[bone->mName.data], weight.mWeight});  
+            vertex.weights[k] = muse::Weight{bone_name_to_index[bone->mName.data], weight.mWeight};  
         }
     }
 }
@@ -189,7 +190,7 @@ void process_weights(std::vector<muse::Vertex>& vertices,
 
 void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_name_to_index,
                         std::uint32_t& index,
-                        const Bone& bone)
+                        const muse::Bone& bone)
 {
     bone_name_to_index[bone.name] = index;
 
@@ -201,14 +202,14 @@ void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_nam
 
 muse::Skeleton process_skeleton(std::vector<muse::Vertex>& vertices, const aiMesh* mesh, const aiScene* scene)
 {
-    std::vector<Bone> bones{};
+    std::vector<muse::Bone> bones{};
 
     std::uint32_t bone_counter = 0u;
     std::unordered_map<std::string, std::uint32_t> bone_name_to_index{};
 
     // Get root bone.
     auto root = find_root_bone(scene, mesh);
-    auto children = process_children(bone, mesh);
+    auto children = process_children(root, mesh);
 
     muse::Bone root_bone{root->mName.data,
                          convert_matrix(root->mOffsetMatrix),
@@ -244,8 +245,7 @@ muse::Mesh process_mesh(const aiMesh* mesh, const aiScene* scene)
     auto skeleton = process_skeleton(vertices, mesh, scene);
     auto indices = process_indices(mesh);
     
-    muse::Mesh mesh{vertices, indices, skeleton};
-    return mesh;
+    return muse::Mesh{vertices, indices, skeleton};
 }
 
 namespace muse
@@ -262,6 +262,6 @@ namespace muse
         
         assert(scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
     
-        meshes.push_back(std::make_unique<Mesh>(process_mesh(scene->mMeshes[0], scene)));
+        return meshes_.emplace_back(std::make_unique<Mesh>(process_mesh(scene->mMeshes[0], scene))).get();
     }
 }
