@@ -36,7 +36,7 @@ namespace muse
         */
         Mesh(const std::vector<Vertex>& vertex_data,
              const std::vector<std::uint32_t>& index_data,
-             Skeleton* skeleton);
+             const Skeleton& skeleton);
 
         /**
          * 
@@ -143,7 +143,7 @@ namespace muse
          *  @return Skeleton pointer.
          * 
         */
-        Skeleton* skeleton() const;
+        const Skeleton* skeleton() const;
 
     private:
         /**
@@ -172,6 +172,6 @@ namespace muse
         std::size_t element_count_;
 
         /** Skeleton. */
-        Skeleton* skeleton_;
+        Skeleton skeleton_;
     };
 }

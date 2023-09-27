@@ -7,6 +7,8 @@ void update_helper(muse::Animation* animation,
                    muse::Bone* bone,
                    glm::mat4& parent_transform)
 {
+    assert(animation != nullptr && "animation pointer cannot be nullptr");
+
     glm::mat4 bone_transform = bone->transform; 
 
     if(animation->frames_exist(bone->name))
@@ -44,6 +46,13 @@ void find_bone_helper(std::string_view name,
 
 namespace muse
 {
+    Skeleton::Skeleton(const Bone& root_bone)
+        : root_bone_(root_bone)
+        , transforms_(100)
+        , animation_(nullptr)
+    {
+    }
+
     Skeleton::Skeleton(const Bone& root_bone,
                        Animation* animation)
         : root_bone_(root_bone)

@@ -6,7 +6,7 @@ namespace muse
 {
     Mesh::Mesh(const std::vector<Vertex>& vertex_data,
                const std::vector<std::uint32_t>& index_data,
-               Skeleton* skeleton)
+               const Skeleton& skeleton)
         : vbo_(sizeof(Vertex) * vertex_data.size())
         , ibo_(sizeof(std::uint32_t) * index_data.size())
         , handle_(0)
@@ -103,8 +103,8 @@ namespace muse
         return element_count_;
     }
 
-    Skeleton* Mesh::skeleton() const
+    const Skeleton* Mesh::skeleton() const
     {
-        return skeleton_;
+        return std::addressof(skeleton_);
     }
 }

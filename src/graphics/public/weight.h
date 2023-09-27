@@ -12,6 +12,27 @@ namespace muse
     */
     struct Weight
     {
+        /**
+         * 
+         *  Create an empty weight.
+         * 
+        */
+        Weight() = default;
+
+        /**
+         * 
+         *  Create a weight.
+         * 
+         *  @param index Index of bone.
+         *  @param weight Influence of bone.
+         * 
+        */
+        Weight(std::uint32_t index, float weight)
+            : index(index)
+            , weight(weight)
+        {
+        }
+
         /** Bone index. */
         std::uint32_t index = 0u;
 

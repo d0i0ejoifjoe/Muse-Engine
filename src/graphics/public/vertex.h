@@ -22,6 +22,34 @@ namespace muse
     public:
         /**
          * 
+         *  Create a vertex without weights.
+         * 
+         *  @param position Position of vertex.
+         *  @param normal Normal of vertex.
+         *  @param color Color of vertex.
+         *  @param tex_coord Texture coordinate of vertex.
+         *  @param tangent Tangent of vertex.
+         *  @param bitangent Bitangent of vertex.
+         * 
+        */
+        Vertex(const glm::vec3& position,
+               const glm::vec3& normal,
+               const glm::vec4& color,
+               const glm::vec2& tex_coord,
+               const glm::vec3& tangent,
+               const glm::vec3& bitangent)
+            : position(position)
+            , normal(normal)
+            , color(color)
+            , tex_coord(tex_coord)
+            , tangent(tangent)
+            , bitangent(bitangent)
+            , weights()
+        {
+        }
+
+        /**
+         * 
          *  Create a vertex.
          * 
          *  @param position Position of vertex.

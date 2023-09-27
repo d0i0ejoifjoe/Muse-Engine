@@ -17,6 +17,15 @@ namespace muse
     public:
         /**
          * 
+         *  Create a skeleton that has no animation responsible for it.
+         * 
+         *  @param root_bone Root bone that contains all other bones as their children.
+         * 
+        */
+        explicit Skeleton(const Bone& root_bone);
+
+        /**
+         * 
          *  Create a skeleton.
          * 
          *  @param root_bone Root bone that contains all other bones as their children.

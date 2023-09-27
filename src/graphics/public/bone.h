@@ -30,7 +30,7 @@ namespace muse
         Bone(std::string_view name,
              const glm::mat4& offset,
              const glm::mat4& transform,
-             std::uint32_t index,
+             std::int32_t index,
              const std::vector<Bone>& children)
             : name(name)
             , offset(offset)
@@ -50,7 +50,7 @@ namespace muse
         glm::mat4 transform;
 
         /** Index of bone. */
-        std::uint32_t index;
+        std::int32_t index;
 
         /** Children of this bone. */
         std::vector<Bone> children;
