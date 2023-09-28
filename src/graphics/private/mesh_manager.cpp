@@ -2,12 +2,16 @@
 #include "graphics/public/mesh.h"
 #include "graphics/public/vertex.h"
 #include "graphics/public/skeleton.h"
+#include "graphics/public/animation.h"
+#include "log/public/logger.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <cstdint>
 #include <unordered_map>
+
+using BoneToNodeMap = std::unordered_map<const aiBone*, aiNode*>;
 
 glm::mat4 convert_matrix(const aiMatrix4x4& m)
 {
@@ -30,6 +34,11 @@ glm::vec4 convert_vec(const aiColor4D& vec)
 glm::vec2 convert_vec(const aiVector2D& vec)
 {
     return glm::vec2{vec.x, vec.y};
+}
+
+glm::quat convert_quat(const aiQuaternion& q)
+{
+    return glm::quat{q.w, q.x, q.y, q.z};
 }
 
 std::vector<muse::Vertex> process_vertices(const aiMesh* mesh)
@@ -90,11 +99,12 @@ const aiBone* find_bone(const aiString& name, const aiMesh* mesh)
  * 
  *  @param bone Bone to process all of it's children.
  *  @param mesh Mesh to find the children in.
+ *  @param map Map that maps bone to node.
  * 
 */
-std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh)
+std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh, BoneToNodeMap& map)
 {
-    auto node = bone->node;
+    auto node = map[bone];
 
     if(node->mNumChildren == 0)
     {
@@ -107,11 +117,11 @@ std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh)
         auto children_node = node->mChildren[i];
         auto children_bone = find_bone(children_node->mName, mesh);
         
-        children.push_back(muse::Bone{children_bone->mName.data,
-                                     convert_matrix(children_bone->mOffsetMatrix),
-                                     convert_matrix(children_node->mTransform),
-                                     -1,
-                                     process_children(children_bone, mesh)});
+        children.emplace_back(children_bone->mName.data,
+                              convert_matrix(children_bone->mOffsetMatrix),
+                              convert_matrix(children_node->mTransformation),
+                              -1,
+                              process_children(children_bone, mesh, map));
     }
 
     return children;
@@ -125,7 +135,7 @@ std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh)
  *  @param mesh Mesh with all bones.
  * 
 */
-const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh)
+const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh, BoneToNodeMap& map)
 {
     std::vector<aiString> bone_names{};
 
@@ -141,7 +151,8 @@ const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh)
     // name so it's the root bone
     for(auto i = 0u; i < mesh->mNumBones; i++)
     {
-        auto node = mesh->mBones[i]->node;
+        auto node = map[mesh->mBones[i]];
+
         auto counter = 0u;
 
         for(auto k = 0u; k < bone_names.size(); k++)
@@ -187,6 +198,37 @@ void process_weights(std::vector<muse::Vertex>& vertices,
     }
 }
 
+void find_node(aiString& name,
+               aiNode* node,
+               aiNode** out_node)
+{
+    if(name == node->mName)
+    {
+        *out_node = node;
+    }
+
+    for(auto i = 0u; i < node->mNumChildren; i++)
+    {
+        find_node(name, node->mChildren[i], out_node);   
+    }
+}
+
+BoneToNodeMap create_bone_to_node_map(const aiMesh* mesh,
+                                      const aiScene* scene)
+{
+    BoneToNodeMap map{};
+
+    for(auto i = 0u; i < mesh->mNumBones; i++)
+    {
+        auto bone = mesh->mBones[i];
+        aiNode* out_node = nullptr;
+
+        find_node(bone->mName, scene->mRootNode, std::addressof(out_node));
+        map[bone] = out_node;
+    }
+
+    return map;
+}
 
 void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_name_to_index,
                         std::uint32_t& index,
@@ -196,7 +238,8 @@ void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_nam
 
     for(const auto& children_bone : bone.children)
     {
-        setup_bone_indices(bone_name_to_index, ++index, children_bone);
+        ++index;
+        setup_bone_indices(bone_name_to_index, index, children_bone);
     }
 }
 
@@ -207,18 +250,19 @@ muse::Skeleton process_skeleton(std::vector<muse::Vertex>& vertices, const aiMes
     std::uint32_t bone_counter = 0u;
     std::unordered_map<std::string, std::uint32_t> bone_name_to_index{};
 
+    BoneToNodeMap bone_to_node = create_bone_to_node_map(mesh, scene);
+
     // Get root bone.
-    auto root = find_root_bone(scene, mesh);
-    auto children = process_children(root, mesh);
+    auto root = find_root_bone(scene, mesh, bone_to_node);
+    auto children = process_children(root, mesh, bone_to_node);
 
     muse::Bone root_bone{root->mName.data,
                          convert_matrix(root->mOffsetMatrix),
-                         convert_matrix(root->node->mTransform),
+                         convert_matrix(bone_to_node[root]->mTransformation),
                          -1,
                          children};
 
     setup_bone_indices(bone_name_to_index, bone_counter, root_bone);
-
     process_weights(vertices, mesh, bone_name_to_index);
 
     return muse::Skeleton{root_bone};
@@ -237,15 +281,70 @@ std::vector<std::uint32_t> process_indices(const aiMesh* mesh)
             indices.push_back(face.mIndices[k]);
         }
     }
+
+    return indices;
 }
 
-muse::Mesh process_mesh(const aiMesh* mesh, const aiScene* scene)
+std::unique_ptr<muse::Mesh> process_mesh(const aiScene* scene)
 {
+    auto mesh = scene->mMeshes[0];
+
     auto vertices = process_vertices(mesh);
     auto skeleton = process_skeleton(vertices, mesh, scene);
     auto indices = process_indices(mesh);
     
-    return muse::Mesh{vertices, indices, skeleton};
+    return std::make_unique<muse::Mesh>(vertices, indices, skeleton);
+}
+
+std::vector<muse::Animation> process_animations(const aiScene* scene)
+{
+    std::vector<muse::Animation> animations{};
+
+    for(auto i = 0u; i < scene->mNumAnimations; i++)
+    {
+        auto animation = scene->mAnimations[i];
+
+        auto ticks_per_second = static_cast<float>(animation->mTicksPerSecond);
+        if(ticks_per_second == 0.0f)
+        {
+            ticks_per_second = 25.0f;
+        }
+
+        auto duration = static_cast<float>(animation->mDuration);
+
+        std::unordered_map<std::string, std::vector<muse::Keyframe>> frames{};
+
+        for(auto k = 0u; k < animation->mNumChannels; k++)
+        {
+            auto channel = animation->mChannels[k];
+
+            std::vector<muse::Keyframe> keyframes{};
+            std::string name = channel->mNodeName.data;
+
+            for(auto j = 0u; j < channel->mNumPositionKeys; j++)
+            {
+                const auto position = convert_vec(channel->mPositionKeys[j].mValue);
+                const auto rotation = convert_quat(channel->mRotationKeys[j].mValue);
+                const auto scale = convert_vec(channel->mScalingKeys[j].mValue);
+
+                muse::Keyframe keyframe{
+                    static_cast<float>(channel->mPositionKeys[j].mTime),
+                    muse::Transform{position,
+                                    rotation,
+                                    scale}
+                };
+
+                keyframes.push_back(keyframe);
+            }
+
+            // If doesn't exist in map create new element
+            frames[name] = keyframes;
+        }
+
+        animations.emplace_back(animation->mName.data, duration, ticks_per_second, std::move(frames));
+    }
+
+    return animations;
 }
 
 namespace muse
@@ -258,10 +357,17 @@ namespace muse
                               : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData;
 
         Assimp::Importer importer{};
-        const auto* scene = importer.ReadFile(filename.c_str(), flags);
-        
+        const auto* scene = importer.ReadFile(filename, flags);
+
+        if(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene || !scene->mRootNode)
+        {
+            LOG_ERROR(MeshManager, std::string("failed to load file\nerror string: ") + importer.GetErrorString());
+        }
+
         assert(scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
-    
-        return meshes_.emplace_back(std::make_unique<Mesh>(process_mesh(scene->mMeshes[0], scene))).get();
+        
+        animation_callback(process_animations(scene));
+
+        return meshes_.emplace_back(process_mesh(scene)).get();
     }
 }

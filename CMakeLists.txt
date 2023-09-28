@@ -91,7 +91,7 @@ fetch_content_macro(glm https://github.com/g-truc/glm 0.9.9.8)
 
 list(APPEND MUSE_INCLUDE_DIRS "${glm_SOURCE_DIR}")
 
-fetch_content_macro(assimp https://github.com/assimp/assimp.git v5.2.5)
+fetch_content_macro(assimp https://github.com/assimp/assimp.git v5.3.1)
 
 list(APPEND MUSE_INCLUDE_DIRS "${assimp_SOURCE_DIR}/include")
 list(APPEND MUSE_LIBRARIES assimp)

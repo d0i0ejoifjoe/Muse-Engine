@@ -4,13 +4,12 @@
 #include <cstdint>
 
 #include "vertex.h"
+#include "skeleton.h"
 #include "buffer.h"
 #include "transform.h"
 
 namespace muse
 {
-    class Skeleton;
-
     /**
      * 
      *  Class that represents a mesh.

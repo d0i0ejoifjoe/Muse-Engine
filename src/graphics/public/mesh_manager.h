@@ -1,14 +1,14 @@
 #pragma once
 
+#include "graphics/public/mesh.h"
+
 #include <string>
 #include <functional>
+#include <memory>
 #include <vector>
 
 namespace muse
 {
-    class Mesh;
-    class Animation;
-
     /**
      * 
      *  This class helps us manage meshes and load the from file.
