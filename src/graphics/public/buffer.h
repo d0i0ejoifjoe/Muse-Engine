@@ -64,7 +64,7 @@ namespace muse
         /** Deleted */
         Buffer(const Buffer&) = delete;
         Buffer& operator=(const Buffer&) = delete;
-        
+
         Buffer(Buffer&&) noexcept = default;
         Buffer& operator=(Buffer&&) noexcept = default;
 

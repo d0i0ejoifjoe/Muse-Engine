@@ -15,7 +15,7 @@ namespace muse
         , format_(format)
     {
         glGenBuffers(1, &handle_);
-        glBindBuffer(GL_TEXTURE_2D, handle_);
+        glBindTexture(GL_TEXTURE_2D, handle_);
 
         switch(format_)
         {
