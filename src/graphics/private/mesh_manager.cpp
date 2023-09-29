@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 using BoneToNodeMap = std::unordered_map<const aiBone*, aiNode*>;
+using BoneNameToIndexMap = std::unordered_map<std::string, std::uint32_t>;
 
 glm::mat4 convert_matrix(const aiMatrix4x4& m)
 {
@@ -41,6 +42,15 @@ glm::quat convert_quat(const aiQuaternion& q)
     return glm::quat{q.w, q.x, q.y, q.z};
 }
 
+/**
+ * 
+ *  Process all vertices in mesh.
+ * 
+ *  @param mesh Mesh to process.
+ * 
+ *  @return Vector of vertices in order that they were stored in mesh.
+ * 
+*/
 std::vector<muse::Vertex> process_vertices(const aiMesh* mesh)
 {
     std::vector<muse::Vertex> vertices{};
@@ -81,6 +91,7 @@ std::vector<muse::Vertex> process_vertices(const aiMesh* mesh)
 */
 const aiBone* find_bone(const aiString& name, const aiMesh* mesh)
 {
+    // Loop all bones and check if name matches the bone name
     for(auto i = 0u; i < mesh->mNumBones; i++)
     {
         auto bone = mesh->mBones[i];
@@ -176,14 +187,14 @@ const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh, BoneToNod
  * 
  *  Setup weights of vertices.
  * 
- *  @param vertices Vertices to setup.
+ *  @param vertices Vertices to setup weights of.
  *  @param mesh Mesh to find the weights in.
  *  @param bone_name_to_index Map that's has it's key as bone name and it's value as it's index.
  * 
 */
 void process_weights(std::vector<muse::Vertex>& vertices,
                      const aiMesh* mesh,
-                     std::unordered_map<std::string, std::uint32_t>& bone_name_to_index)
+                     BoneNameToIndexMap& bone_name_to_index)
 {
     for(auto i = 0u; i < mesh->mNumBones; i++)
     {
@@ -198,21 +209,45 @@ void process_weights(std::vector<muse::Vertex>& vertices,
     }
 }
 
+/**
+ * 
+ *  Find node by name.
+ * 
+ *  @param name Name of node to find.
+ *  @param node Node to compare it's name with provided name (from start always supply scene->mRootNode
+ *                                                            if you want to look for node in whole hierarchy).
+ *  @param out_node If node found set the this pointer to the found node.
+ * 
+*/
 void find_node(aiString& name,
                aiNode* node,
                aiNode** out_node)
 {
+    // If node's name matches provided name set the pointer to the node.
     if(name == node->mName)
     {
         *out_node = node;
     }
 
+    // Else we loop through all of it's children to look for node there if 
+    // has no children loop won't start anyway, so no need to add any unnecessary
+    // if statements
     for(auto i = 0u; i < node->mNumChildren; i++)
     {
         find_node(name, node->mChildren[i], out_node);   
     }
 }
 
+/**
+ * 
+ *  Create bone to node map.
+ * 
+ *  @param mesh Mesh that contains all bones for map.
+ *  @param scene Scene that contains all nodes for map.
+ * 
+ *  @return New map.
+ * 
+*/
 BoneToNodeMap create_bone_to_node_map(const aiMesh* mesh,
                                       const aiScene* scene)
 {
@@ -230,12 +265,24 @@ BoneToNodeMap create_bone_to_node_map(const aiMesh* mesh,
     return map;
 }
 
-void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_name_to_index,
+/**
+ * 
+ *  Setup all bone indices.
+ * 
+ *  @param bone_name_to_index Map to setup.
+ *  @param index Internal counter we will increment every time when found new bone.
+ *  @param bone This argument should be root bone of skeleton all of the times.
+ * 
+*/
+void setup_bone_indices(BoneNameToIndexMap& bone_name_to_index,
                         std::uint32_t& index,
                         const muse::Bone& bone)
 {
+    // Process provided bone
     bone_name_to_index[bone.name] = index;
 
+    // Process all of bone's children and for every bone
+    // increment counter and process that bone
     for(const auto& children_bone : bone.children)
     {
         ++index;
@@ -243,13 +290,23 @@ void setup_bone_indices(std::unordered_map<std::string, std::uint32_t>& bone_nam
     }
 }
 
+/**
+ * 
+ *  Process skeleton of mesh.
+ * 
+ *  @param vertices Vertices to setup weights of.
+ *  @param mesh Mesh to process skeleton of.
+ *  @param scene Assimp scene.
+ * 
+*/
 muse::Skeleton process_skeleton(std::vector<muse::Vertex>& vertices, const aiMesh* mesh, const aiScene* scene)
 {
     std::vector<muse::Bone> bones{};
 
     std::uint32_t bone_counter = 0u;
-    std::unordered_map<std::string, std::uint32_t> bone_name_to_index{};
+    BoneNameToIndexMap bone_name_to_index{};
 
+    // Get bone to node map.
     BoneToNodeMap bone_to_node = create_bone_to_node_map(mesh, scene);
 
     // Get root bone.
@@ -262,7 +319,10 @@ muse::Skeleton process_skeleton(std::vector<muse::Vertex>& vertices, const aiMes
                          -1,
                          children};
 
+    // Setup all of indices.
     setup_bone_indices(bone_name_to_index, bone_counter, root_bone);
+    
+    // Setup all of weights.
     process_weights(vertices, mesh, bone_name_to_index);
 
     return muse::Skeleton{root_bone};
