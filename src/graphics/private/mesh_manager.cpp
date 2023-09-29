@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+/** Aliases */
 using BoneToNodeMap = std::unordered_map<const aiBone*, aiNode*>;
 using BoneNameToIndexMap = std::unordered_map<std::string, std::uint32_t>;
 
@@ -352,7 +353,7 @@ std::unique_ptr<muse::Mesh> process_mesh(const aiScene* scene)
     auto vertices = process_vertices(mesh);
     auto skeleton = process_skeleton(vertices, mesh, scene);
     auto indices = process_indices(mesh);
-    
+
     return std::make_unique<muse::Mesh>(vertices, indices, skeleton);
 }
 
@@ -413,8 +414,8 @@ namespace muse
                             bool flip_uvs,
                             std::function<void(const std::vector<Animation>&)> animation_callback)
     {
-        auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData | aiProcess_FlipUVs
-                              : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData;
+        auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_FlipUVs
+                              : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights;
 
         Assimp::Importer importer{};
         const auto* scene = importer.ReadFile(filename, flags);
