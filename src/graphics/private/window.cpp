@@ -31,11 +31,7 @@ void gl_debug_output(GLenum source,
     std::string source_str = "";
     std::string severity_str = "";
 
-<<<<<<< HEAD
     // Convert all of OpenGL Enums to strings
-=======
-    // Convert all of OpenGL Enums to strings
->>>>>>> origin/main
     switch(type)
     {
     case GL_DEBUG_TYPE_ERROR: type_str = "error"; break;
