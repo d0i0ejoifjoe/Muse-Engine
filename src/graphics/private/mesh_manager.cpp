@@ -143,11 +143,11 @@ std::vector<muse::Bone> process_children(const aiBone* bone, const aiMesh* mesh,
  * 
  *  Get root bone.
  * 
- *  @param scene Assimp scene.
  *  @param mesh Mesh with all bones.
+ *  @param map Map that maps bone to node.
  * 
 */
-const aiBone* find_root_bone(const aiScene* scene, const aiMesh* mesh, BoneToNodeMap& map)
+const aiBone* find_root_bone(const aiMesh* mesh, BoneToNodeMap& map)
 {
     std::vector<aiString> bone_names{};
 
@@ -311,7 +311,7 @@ muse::Skeleton process_skeleton(std::vector<muse::Vertex>& vertices, const aiMes
     BoneToNodeMap bone_to_node = create_bone_to_node_map(mesh, scene);
 
     // Get root bone.
-    auto root = find_root_bone(scene, mesh, bone_to_node);
+    auto root = find_root_bone(mesh, bone_to_node);
     auto children = process_children(root, mesh, bone_to_node);
 
     muse::Bone root_bone{root->mName.data,
