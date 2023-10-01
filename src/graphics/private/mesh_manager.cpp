@@ -411,8 +411,7 @@ std::vector<muse::Animation> process_animations(const aiScene* scene)
 namespace muse
 {
     Mesh* MeshManager::load(const std::string& filename,
-                            bool flip_uvs,
-                            std::function<void(const std::vector<Animation>&)> animation_callback)
+                            bool flip_uvs)
     {
         auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_FlipUVs
                               : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights;
@@ -426,9 +425,46 @@ namespace muse
         }
 
         assert(scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
-        
-        animation_callback(process_animations(scene));
 
         return meshes_.emplace_back(process_mesh(scene)).get();
+    }
+
+    Mesh* MeshManager::load(const std::string& animation_filename,
+                            const std::string& mesh_filename,
+                            bool flip_uvs,
+                            std::function<void(const std::vector<Animation>&)> animation_callback)
+    {
+        auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_FlipUVs
+                              : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights;
+
+        Assimp::Importer animation_importer{};
+        Assimp::Importer mesh_importer{};
+
+        const auto* mesh_scene = mesh_importer.ReadFile(mesh_filename, flags);
+        const auto* animation_scene = animation_importer.ReadFile(animation_filename, flags);
+    
+        if(mesh_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !mesh_scene || !mesh_scene->mRootNode)
+        {
+            LOG_ERROR(MeshManager, std::string("failed to load file mesh\nerror string: ") + mesh_importer.GetErrorString());
+        }
+        else if(animation_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !animation_scene || !animation_scene->mRootNode)
+        {
+            LOG_ERROR(MeshManager, std::string("failed to load file animation\nerror string: ") + animation_importer.GetErrorString());
+        }
+
+        assert(mesh_scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
+        animation_callback(process_animations(animation_scene));
+
+        return meshes_.emplace_back(process_mesh(mesh_scene)).get();
+    }
+
+    Mesh* MeshManager::mesh(std::uint32_t index)
+    {
+        return meshes_.at(index).get();
+    }
+
+    void MeshManager::remove(std::uint32_t index)
+    {
+        meshes_.erase(std::begin(meshes_) + index);
     }
 }

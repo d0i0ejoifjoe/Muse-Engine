@@ -29,4 +29,6 @@ namespace muse
         constexpr auto epsilon = std::numeric_limits<float>::epsilon();
         return std::fabs(a - b) < epsilon;
     }
+
+    #define MUSE_NODISCARD [[nodiscard]]
 }

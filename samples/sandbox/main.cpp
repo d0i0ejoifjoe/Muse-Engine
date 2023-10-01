@@ -21,7 +21,8 @@ int main()
     SDL_Init(SDL_INIT_EVERYTHING);
 
     muse::Window window{};
-    manager.load("/home/sviatoslav/Documents/WizardusMaximus.fbx", false, a);
+    auto* mesh = manager.load("/home/sviatoslav/Documents/WizardusMaximus.fbx", false);
+    mesh->bind();
 
     std::cin.get();
 

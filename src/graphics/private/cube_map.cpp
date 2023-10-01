@@ -20,9 +20,9 @@ std::array<GLenum, 3> to_opengl_format(muse::TextureFormat format)
 
     switch(format)
     {
-    case TextureFormat::RGBA: internal_format = GL_RGBA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break; 
-    case TextureFormat::SRGB_ALPHA: internal_format = GL_SRGB_ALPHA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break;
-    case TextureFormat::DEPTH_COMPONENT: internal_format = GL_DEPTH_COMPONENT; gl_format = GL_DEPTH_COMPONENT; gl_type = GL_FLOAT; break;
+    case muse::TextureFormat::RGBA: internal_format = GL_RGBA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break; 
+    case muse::TextureFormat::SRGB_ALPHA: internal_format = GL_SRGB_ALPHA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break;
+    case muse::TextureFormat::DEPTH_COMPONENT: internal_format = GL_DEPTH_COMPONENT; gl_format = GL_DEPTH_COMPONENT; gl_type = GL_FLOAT; break;
     }
 
     return {internal_format, gl_format, gl_type};
