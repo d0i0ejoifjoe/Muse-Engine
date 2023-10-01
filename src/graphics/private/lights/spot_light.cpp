@@ -4,7 +4,7 @@ namespace muse
 {
     SpotLight::SpotLight()
         : position_({0.0f, 0.0f, 0.0f})
-        , direction_(glm::normalize({0.0f, -1.0f, 0.0f}))
+        , direction_(glm::normalize(glm::vec3{0.0f, -1.0f, 0.0f}))
         , projection_(glm::perspective(glm::radians(45.0f), 100.0f, 0.1f, 1000.0f))
         , view_(glm::lookAt(position_, position_ + direction_, {0.0f, 1.0f, 0.0f}))
         , casts_shadows_(true)
@@ -55,7 +55,7 @@ namespace muse
         view_ = glm::lookAt(position_, position_ + direction_, {0.0f, 1.0f, 0.0f});
     }
 
-    Attenuation& SpotLight::attenuation() const
+    const Attenuation& SpotLight::attenuation() const
     {
         return attenuation_;
     }

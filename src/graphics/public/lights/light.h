@@ -26,7 +26,7 @@ namespace muse
     enum class LightType : std::uint8_t
     {
         AMBIENT,
-        DIRECTION,
+        DIRECTIONAL,
         POINT,
         SPOT
     };
@@ -173,7 +173,7 @@ namespace muse
          *  @return Const reference to attenuation coefficients. 
          * 
         */
-        virtual Attenuation& attenuation() const = 0;
+        virtual const Attenuation& attenuation() const = 0;
 
         /**
          * 

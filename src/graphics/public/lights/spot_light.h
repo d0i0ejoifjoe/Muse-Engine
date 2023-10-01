@@ -93,7 +93,7 @@ namespace muse
          *  @return Const reference to attenuation coefficients. 
          * 
         */
-        Attenuation& attenuation() const override;
+        const Attenuation& attenuation() const override;
 
         /**
          * 

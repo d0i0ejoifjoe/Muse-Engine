@@ -3,9 +3,7 @@
 namespace muse
 {
     Light::Light()
-        : projection_({1.0f})
-        , view_({1.0f})
-        , intensity_(0.5f)
+        : intensity_(0.5f)
         , color_({1.0f, 1.0f, 1.0f, 1.0f})
     {
     }
@@ -20,7 +18,7 @@ namespace muse
         intensity_ = intensity;
     }
     
-    glm::mat4 Light::color() const
+    glm::vec4 Light::color() const
     {
         return color_;
     }
