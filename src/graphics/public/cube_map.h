@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad.h"
+#include "graphics/public/texture_format.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -32,6 +33,7 @@ namespace muse
          *  @param back_data Data of back side.
          *  @param width Width of all sides.
          *  @param height Height of all sides.
+         *  @param format Format of all sides.
          *  @param sampler Sampler to sample cubemap with.
          * 
         */
@@ -43,6 +45,7 @@ namespace muse
                 std::byte* back_data,
                 std::uint32_t width,
                 std::uint32_t height,
+                TextureFormat format,
                 Sampler* sampler);
 
         /**

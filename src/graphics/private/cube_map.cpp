@@ -3,6 +3,31 @@
 
 #include <array>
 
+/**
+ * 
+ *  Convert engine format to opengl format.
+ * 
+ *  @param format Engine format.
+ * 
+ *  @return Array with opengl types [internal_format, gl_format, gl_type]. 
+ * 
+*/
+std::array<GLenum, 3> to_opengl_format(muse::TextureFormat format)
+{
+    GLenum internal_format = GL_NONE;
+    GLenum gl_format = GL_NONE;
+    GLenum gl_type = GL_NONE;
+
+    switch(format)
+    {
+    case TextureFormat::RGBA: internal_format = GL_RGBA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break; 
+    case TextureFormat::SRGB_ALPHA: internal_format = GL_SRGB_ALPHA; gl_format = GL_RGBA; gl_type = GL_UNSIGNED_BYTE; break;
+    case TextureFormat::DEPTH_COMPONENT: internal_format = GL_DEPTH_COMPONENT; gl_format = GL_DEPTH_COMPONENT; gl_type = GL_FLOAT; break;
+    }
+
+    return {internal_format, gl_format, gl_type};
+}
+
 namespace muse
 {
     CubeMap::CubeMap(std::byte* left_data,
@@ -13,6 +38,7 @@ namespace muse
                      std::byte* back_data,
                      std::uint32_t width,
                      std::uint32_t height,
+                     TextureFormat format,
                      Sampler* sampler)
         : width_(width)
         , height_(height)
@@ -31,9 +57,11 @@ namespace muse
             front_data
         };
 
-        for(auto i = 0; i > 6; i++)
+        auto gl_formats = to_opengl_format(format);
+
+        for(auto i = 0; i < 6; i++)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB_ALPHA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i]);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl_formats[0], width_, height_, 0, gl_formats[1], gl_formats[2], data[i]);
             i++;
         }
 

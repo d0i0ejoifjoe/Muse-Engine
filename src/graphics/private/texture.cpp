@@ -21,7 +21,7 @@ namespace muse
         {
         case TextureFormat::RGBA: glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); break;
         case TextureFormat::SRGB_ALPHA: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); break;
-        case TextureFormat::DEPTH_COMPONENT: glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width_, height_, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, data); break;
+        case TextureFormat::DEPTH_COMPONENT: glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width_, height_, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data); break;
         }
 
         bindless_handle_ = glGetTextureSamplerHandleARB(handle_, sampler->handle());

@@ -3,9 +3,14 @@
 #include <limits>
 #include <numbers>
 #include <cmath>
+#include <tuple>
 
 namespace muse
 {
+    /** Alias for a pair. */
+    template<class T>
+    using Pair = std::pair<T, T>;
+
     /** PI */
     inline constexpr auto pi = std::numbers::pi_v<float>;
     

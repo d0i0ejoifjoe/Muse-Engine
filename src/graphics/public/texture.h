@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad.h"
+#include "graphics/public/texture_format.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -8,14 +9,6 @@
 namespace muse
 {
     class Sampler;
-
-    /** Enum for texture format */
-    enum class TextureFormat : std::uint8_t
-    {
-        RGBA,
-        SRGB_ALPHA,
-        DEPTH_COMPONENT
-    };
 
     /**
      * 
