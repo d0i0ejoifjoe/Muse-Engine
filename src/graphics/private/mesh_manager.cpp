@@ -15,6 +15,15 @@
 using BoneToNodeMap = std::unordered_map<const aiBone*, aiNode*>;
 using BoneNameToIndexMap = std::unordered_map<std::string, std::uint32_t>;
 
+/**
+ * 
+ *  Convert assimp matrix to glm matrix.
+ * 
+ *  @param m Assimp matrix.
+ * 
+ *  @return GLM matrix.
+ * 
+*/
 glm::mat4 convert_matrix(const aiMatrix4x4& m)
 {
     return glm::mat4{m.a1, m.a2, m.a3, m.a4,
@@ -23,21 +32,57 @@ glm::mat4 convert_matrix(const aiMatrix4x4& m)
                      m.d1, m.d2, m.d3, m.d4};
 }
 
+/**
+ * 
+ *  Convert assimp vector 3d to GLM vector.
+ * 
+ *  @param vec Assimp vector.
+ * 
+ *  @return GLM vector.
+ * 
+*/
 glm::vec3 convert_vec(const aiVector3D& vec)
 {
     return glm::vec3{vec.x, vec.y, vec.z};
 }
 
+/**
+ * 
+ *  Convert assimp RGBA color to GLM vector.
+ * 
+ *  @param vec Assimp vector.
+ * 
+ *  @return GLM vector.
+ * 
+*/
 glm::vec4 convert_vec(const aiColor4D& vec)
 {
     return glm::vec4{vec.r, vec.g, vec.b, vec.a};
 }
 
+/**
+ * 
+ *  Convert assimp vector 2d to GLM vector.
+ * 
+ *  @param vec Assimp vector.
+ * 
+ *  @return GLM vector.
+ * 
+*/
 glm::vec2 convert_vec(const aiVector2D& vec)
 {
     return glm::vec2{vec.x, vec.y};
 }
 
+/**
+ * 
+ *  Convert assimp quaternion to GLM quaternion.
+ * 
+ *  @param vec Assimp vector.
+ * 
+ *  @return GLM vector.
+ * 
+*/
 glm::quat convert_quat(const aiQuaternion& q)
 {
     return glm::quat{q.w, q.x, q.y, q.z};
