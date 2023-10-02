@@ -1,0 +1,23 @@
+BasedOnStyle: Microsoft
+UseTab: Never
+IndentWidth: 4
+BreakBeforeBraces: Allman
+BreakConstructorInitializers: BeforeComma
+Cpp11BracedListStyle: true
+IndentCaseBlocks: true
+IndentCaseLabels: true
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortCaseLabelsOnASingleLine: true
+AlignEscapedNewlines: Right
+IncludeBlocks: Regroup
+AccessModifierOffset: -2
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+FixNamespaceComments: false
+ColumnLimit: 0
+AllowShortBlocksOnASingleLine: Never
+IncludeCategories:
+  - Regex: '^".*"'
+    Priority: 1
+  - Regex: '^<.*>'
+    Priority: 2

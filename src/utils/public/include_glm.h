@@ -12,7 +12,7 @@
 #define POP() PRAGMA(clang diagnostic pop)
 #elif defined(MUSE_COMPILER_MSVC)
 #define PUSH() __pragma(push)
-#define DISABLE_WARNING(expr) __pragma(warning(disable:expr))
+#define DISABLE_WARNING(expr) __pragma(warning(disable : expr))
 #define POP() __pragma(pop)
 #endif
 
@@ -23,8 +23,8 @@ DISABLE_WARNING(-Wvolatile)
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/io.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #if !defined(MUSE_COMPILER_MSVC)
 POP()

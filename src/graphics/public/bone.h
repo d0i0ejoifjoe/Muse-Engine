@@ -2,57 +2,59 @@
 
 #include "utils/public/include_glm.h"
 
-#include <vector>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace muse
 {
+
+/**
+ *
+ *  Structure that encapsulates information about
+ *  that bone like it's offset matrix, transform matrix, name, index, etc.
+ *
+ */
+struct Bone
+{
     /**
-     * 
-     *  Structure that encapsulates information about
-     *  that bone like it's offset matrix, transform matrix, name, index, etc. 
-     * 
-    */
-    struct Bone
+     *
+     *  Create a bone.
+     *
+     *  @param name Name of bone.
+     *  @param offset Offset matrix.
+     *  @param transform Transform matrix.
+     *  @param index Index of bone.
+     *  @param children All of it's children.
+     *
+     */
+    Bone(std::string_view name,
+         const glm::mat4 &offset,
+         const glm::mat4 &transform,
+         std::int32_t index,
+         const std::vector<Bone> &children)
+        : name(name)
+        , offset(offset)
+        , transform(transform)
+        , index(index)
+        , children(children)
     {
-        /**
-         * 
-         *  Create a bone.
-         * 
-         *  @param name Name of bone.
-         *  @param offset Offset matrix.
-         *  @param transform Transform matrix.
-         *  @param index Index of bone.
-         *  @param children All of it's children.
-         * 
-        */
-        Bone(std::string_view name,
-             const glm::mat4& offset,
-             const glm::mat4& transform,
-             std::int32_t index,
-             const std::vector<Bone>& children)
-            : name(name)
-            , offset(offset)
-            , transform(transform)
-            , index(index)
-            , children(children)
-        {
-        }
+    }
 
-        /** Name of bone. */
-        std::string name;
+    /** Name of bone. */
+    std::string name;
 
-        /** Offset matrix. */
-        glm::mat4 offset;
+    /** Offset matrix. */
+    glm::mat4 offset;
 
-        /** Transform matrix. */
-        glm::mat4 transform;
+    /** Transform matrix. */
+    glm::mat4 transform;
 
-        /** Index of bone. */
-        std::int32_t index;
+    /** Index of bone. */
+    std::int32_t index;
 
-        /** Children of this bone. */
-        std::vector<Bone> children;
-    };
+    /** Children of this bone. */
+    std::vector<Bone> children;
+};
+
 }

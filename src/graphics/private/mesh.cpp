@@ -1,110 +1,113 @@
 #include "graphics/public/mesh.h"
-#include "graphics/public/skeleton.h"
+
 #include "graphics/private/vertex_descriptor.h"
+#include "graphics/public/skeleton.h"
 
 namespace muse
 {
-    Mesh::Mesh(const std::vector<Vertex>& vertex_data,
-               const std::vector<std::uint32_t>& index_data,
-               const Skeleton& skeleton)
-        : vbo_(sizeof(Vertex) * vertex_data.size())
-        , ibo_(sizeof(std::uint32_t) * index_data.size())
-        , handle_(0)
-        , receive_shadows_(true)
-        , transform_(Transform{})
-        , element_count_(0)
-        , skeleton_(skeleton)
-    {
-        glGenVertexArrays(1, &handle_);
 
-        write_data(vertex_data);
-        write_data(index_data);
+Mesh::Mesh(const std::vector<Vertex> &vertex_data, const std::vector<std::uint32_t> &index_data,
+           const Skeleton &skeleton)
+    : vbo_(sizeof(Vertex) * vertex_data.size())
+    , ibo_(sizeof(std::uint32_t) * index_data.size())
+    , handle_(0)
+    , receive_shadows_(true)
+    , transform_(Transform{})
+    , element_count_(0)
+    , skeleton_(skeleton)
+{
+    glGenVertexArrays(1, &handle_);
+
+    write_data(vertex_data);
+    write_data(index_data);
+}
+
+void Mesh::write_data(const std::vector<Vertex> &vertex_data)
+{
+    vbo_.write(vertex_data);
+    setup();
+}
+
+void Mesh::write_data(const std::vector<std::uint32_t> &index_data)
+{
+    ibo_.write(index_data);
+    element_count_ += index_data.size();
+
+    setup();
+}
+
+void Mesh::bind()
+{
+    glBindVertexArray(handle_);
+}
+
+void Mesh::setup()
+{
+    glBindVertexArray(handle_);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_.handle());
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_.handle());
+
+    auto index = 0u;
+    auto size = DefaultVertexDescriptor.size();
+
+    for (const auto &[_, __, count, offset] : DefaultVertexDescriptor)
+    {
+        glEnableVertexAttribArray(index);
+        glVertexAttribPointer(index, static_cast<GLint>(count), GL_FLOAT, GL_FALSE, static_cast<GLsizei>(size),
+                              reinterpret_cast<void *>(offset));
+        index++;
     }
 
-    void Mesh::write_data(const std::vector<Vertex>& vertex_data)
-    {
-        vbo_.write(vertex_data);
-        setup();
-    }
-    
-    void Mesh::write_data(const std::vector<std::uint32_t>& index_data)
-    {
-        ibo_.write(index_data);
-        element_count_ += index_data.size();
-        
-        setup();
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    void Mesh::bind()
-    {
-        glBindVertexArray(handle_);
-    }
+    glBindVertexArray(0);
+}
 
-    void Mesh::setup()
-    {
-        glBindVertexArray(handle_);
+void Mesh::set_receive_shadows(bool receive_shadows)
+{
+    receive_shadows_ = receive_shadows;
+}
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_.handle());
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_.handle());
+bool Mesh::receive_shadows() const
+{
+    return receive_shadows_;
+}
 
-        auto index = 0u;
-        auto size = DefaultVertexDescriptor.size();
+Transform Mesh::transform() const
+{
+    return transform_;
+}
 
-        for(const auto&[_, __, count, offset] : DefaultVertexDescriptor)
-        {
-            glEnableVertexAttribArray(index);
-            glVertexAttribPointer(index, static_cast<GLint>(count), GL_FLOAT, GL_FALSE, static_cast<GLsizei>(size), reinterpret_cast<void*>(offset));
-            index++;
-        }
+void Mesh::set_transform(const Transform &transform)
+{
+    transform_ = transform;
+}
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+void Mesh::set_translation(const glm::vec3 &translation)
+{
+    transform_.set_translation(translation);
+}
 
-        glBindVertexArray(0);
-    }
+void Mesh::set_rotation(const glm::quat &rotation)
+{
+    transform_.set_rotation(rotation);
+}
 
-    void Mesh::set_receive_shadows(bool receive_shadows)
-    {
-        receive_shadows_ = receive_shadows;
-    }
+void Mesh::set_scale(const glm::vec3 &scale)
+{
+    transform_.set_scale(scale);
+}
 
-    bool Mesh::receive_shadows() const
-    {
-        return receive_shadows_;
-    }
+std::size_t Mesh::element_count() const
+{
+    return element_count_;
+}
 
-    Transform Mesh::transform() const
-    {
-        return transform_;
-    }
+const Skeleton *Mesh::skeleton() const
+{
+    return std::addressof(skeleton_);
+}
 
-    void Mesh::set_transform(const Transform& transform)
-    {
-        transform_ = transform;
-    }
-
-    void Mesh::set_translation(const glm::vec3& translation)
-    {
-        transform_.set_translation(translation);
-    }
-
-    void Mesh::set_rotation(const glm::quat& rotation)
-    {
-        transform_.set_rotation(rotation);
-    }
-
-    void Mesh::set_scale(const glm::vec3& scale)
-    {
-        transform_.set_scale(scale);
-    }
-
-    std::size_t Mesh::element_count() const
-    {
-        return element_count_;
-    }
-
-    const Skeleton* Mesh::skeleton() const
-    {
-        return std::addressof(skeleton_);
-    }
 }

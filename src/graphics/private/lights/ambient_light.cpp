@@ -2,8 +2,10 @@
 
 namespace muse
 {
-    LightType AmbientLight::type() const
-    {
-        return LightType::AMBIENT;
-    }
+
+LightType AmbientLight::type() const
+{
+    return LightType::AMBIENT;
+}
+
 }

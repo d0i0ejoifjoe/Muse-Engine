@@ -2,47 +2,49 @@
 
 namespace muse
 {
-    DirectionalLight::DirectionalLight()
-        : direction_(glm::normalize(glm::vec3{0.0f, -1.0f, 0.0f}))
-        , projection_(glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 0.1f, 1000.0f))
-        , view_(glm::lookAt(-direction_, {}, {0.0f, 1.0f, 0.0f}))
-        , casts_shadows_(true)
-    {
-    }
 
-    LightType DirectionalLight::type() const
-    {
-        return LightType::DIRECTIONAL;
-    }
+DirectionalLight::DirectionalLight()
+    : direction_(glm::normalize(glm::vec3{0.0f, -1.0f, 0.0f}))
+    , projection_(glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 0.1f, 1000.0f))
+    , view_(glm::lookAt(-direction_, {}, {0.0f, 1.0f, 0.0f}))
+    , casts_shadows_(true)
+{
+}
 
-    glm::mat4 DirectionalLight::projection() const
-    {
-        return projection_;
-    }
+LightType DirectionalLight::type() const
+{
+    return LightType::DIRECTIONAL;
+}
 
-    glm::mat4 DirectionalLight::view() const
-    {
-        return view_;
-    }
+glm::mat4 DirectionalLight::projection() const
+{
+    return projection_;
+}
 
-    bool DirectionalLight::casts_shadows() const
-    {
-        return casts_shadows_;
-    }
+glm::mat4 DirectionalLight::view() const
+{
+    return view_;
+}
 
-    void DirectionalLight::set_casts_shadows(bool casts_shadows)
-    {
-        casts_shadows_ = casts_shadows;
-    }
+bool DirectionalLight::casts_shadows() const
+{
+    return casts_shadows_;
+}
 
-    void DirectionalLight::set_direction(const glm::vec3& direction)
-    {
-        direction_ = direction;
-        view_ = glm::lookAt(-direction_, {}, {0.0f, 1.0f, 0.0f});
-    }
+void DirectionalLight::set_casts_shadows(bool casts_shadows)
+{
+    casts_shadows_ = casts_shadows;
+}
 
-    glm::vec3 DirectionalLight::direction() const
-    {
-        return direction_;
-    }
+void DirectionalLight::set_direction(const glm::vec3 &direction)
+{
+    direction_ = direction;
+    view_ = glm::lookAt(-direction_, {}, {0.0f, 1.0f, 0.0f});
+}
+
+glm::vec3 DirectionalLight::direction() const
+{
+    return direction_;
+}
+
 }
