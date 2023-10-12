@@ -36,6 +36,7 @@ class CubeMap
      *  @param height Height of all sides.
      *  @param format Format of all sides.
      *  @param sampler Sampler to sample cubemap with.
+     *  @param color_channels How much color channels has loaded image data.
      *  @param index Index of cubemap.
      *
      */
@@ -49,6 +50,7 @@ class CubeMap
             std::uint32_t height,
             TextureFormat format,
             Sampler *sampler,
+            std::uint32_t color_channels,
             std::int32_t index);
 
     /**
@@ -95,12 +97,12 @@ class CubeMap
     std::uint32_t height() const;
 
     /**
-     * 
+     *
      *  Get index of cubemap.
-     * 
+     *
      *  @return Index.
-     * 
-    */
+     *
+     */
     std::int32_t index() const;
 
   private:

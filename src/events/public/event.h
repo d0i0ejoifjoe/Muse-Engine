@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <cstdint>
 #include <type_traits>
+#include <variant>
 
 namespace muse
 {
@@ -14,7 +15,7 @@ enum class EventType : std::uint8_t
     MOUSE,
     MOUSE_BUTTON,
     WHEEL_SCROLL,
-    QUIT
+    INVALID
 };
 
 /** Enum for keystate like if the key is pressed or released. */
@@ -41,6 +42,8 @@ enum class Button : std::uint8_t
 /** Enum for most of keys on keyboard. */
 enum class Key : std::uint32_t
 {
+    NONE = 0,
+
     NUM_0,        // 0
     NUM_1,        // 1
     NUM_2,        // 2
@@ -115,7 +118,7 @@ enum class Key : std::uint32_t
     SPACE,        // " "
     COLON,        // :
     SEMICOLON,    // ;
-    DOT,          // .
+    PERIOD,       // .
     COMMA,        // ,
     LBRACE,       // {
     RBRACE,       // }
@@ -124,7 +127,7 @@ enum class Key : std::uint32_t
     ASTERISK,     // *
     AMPERSAND,    // &
     AT,           // @
-    TAG,          // #
+    HASHTAG,      // #
     DOLLAR,       // $
     LPAREN,       // (
     RPAREN,       // )
@@ -136,18 +139,28 @@ enum class Key : std::uint32_t
 
 /**
  *
- *  Structure that encapsulates all of the data
- *  for keyboard event like what key was pressed or released
- *  and key's state.
+ *  This structure doesn't encapsulates any data but allows us
+ *  to get/set the state of key in keymap we do this that
+ *  the user doesn't need to access some global map
+ *  and can access only from this struct that is excepted to be returned
+ *  by event class.
  *
  */
 struct KeyboardEvent
 {
     /**
      *
+     *  Create keyboard event.
+     *
+     *  @param key Key that was pressed or released.
+     *  @param state State of the key.
+     *
+     */
+    KeyboardEvent(Key key, KeyState state);
+
+    /**
+     *
      *  Get reference to state of key in key map.
-     *  Little trick to not make user access some global map variable
-     *  but only access it from returned by event class event struct.
      *
      *  @param key Key that is in keymap.
      *
@@ -155,12 +168,6 @@ struct KeyboardEvent
      *
      */
     KeyState &operator[](Key key) const;
-
-    /** Key that was pressed or released. */
-    Key key;
-
-    /** State of the key. */
-    KeyState state;
 
     /** Indicates what's the type of event struct it is (has every event struct). */
     static constexpr EventType type = EventType::KEYBOARD;
@@ -220,15 +227,12 @@ struct WheelScrollEvent
 
 /**
  *
- *  Structure for quit event, doesn't encapsulate
- *  any data because it's existance states that user wants
- *  to close window.
+ *  Invalid event, just a placeholder.
  *
  */
-struct QuitEvent
+struct InvalidEvent
 {
-    /** Indicates what's the type of event struct it is (has every event struct). */
-    static constexpr EventType type = EventType::QUIT;
+    static constexpr EventType type = EventType::INVALID;
 };
 
 /**
@@ -263,13 +267,16 @@ struct is_event<WheelScrollEvent> : std::true_type
 };
 
 template <>
-struct is_event<QuitEvent> : std::true_type
+struct is_event<InvalidEvent> : std::true_type
 {
 };
 
+template <class T>
+static constexpr bool is_event_v = is_event<T>::value;
+
 // Concept for is_event type trait
 template <class T>
-concept IsEvent = is_event<T>;
+concept IsEvent = is_event_v<T>;
 
 /**
  *
@@ -318,14 +325,14 @@ class Event
      *
      */
     template <IsEvent T>
-    const T *get() const
+    const T &get() const
     {
-        return std::get_if<T>(&event_);
+        return std::get<T>(event_);
     }
 
   private:
     /** Event variant. */
-    std::variant<KeyboardEvent, MouseEvent, MouseButtonEvent, QuitEvent, WheelScrollEvent> event_;
+    std::variant<KeyboardEvent, MouseEvent, MouseButtonEvent, WheelScrollEvent, InvalidEvent> event_;
 
     /** Type of event. */
     EventType type_;

@@ -1,5 +1,7 @@
 #include "graphics/public/transform.h"
 
+#include "log/public/logger.h"
+
 glm::vec3 lerp(const glm::vec3 &a, const glm::vec3 &b, float alpha)
 {
     return a * (1.0f - alpha) + alpha * b;
@@ -38,6 +40,13 @@ glm::quat slerp(const glm::quat &a, const glm::quat &b, float alpha)
 namespace muse
 {
 
+Transform::Transform()
+    : translation_({0.0f, 0.0f, 0.0f})
+    , rotation_({1.0f, 0.0f, 0.0f, 0.0f})
+    , scale_({1.0f, 1.0f, 1.0f})
+{
+}
+
 Transform::Transform(const glm::vec3 &translation, const glm::quat &rotation, const glm::vec3 &scale)
     : translation_(translation)
     , rotation_(rotation)
@@ -59,7 +68,7 @@ Transform::Transform(const glm::mat4 &m)
 
 glm::mat4 Transform::matrix() const
 {
-    return glm::scale(glm::mat4{}, scale_) * glm::translate(glm::mat4{}, translation_) * glm::mat4_cast(rotation_);
+    return glm::scale(glm::mat4{1.0f}, scale_) * glm::translate(glm::mat4{1.0f}, translation_) * glm::mat4_cast(rotation_);
 }
 
 void Transform::set_matrix(const glm::mat4 &m)

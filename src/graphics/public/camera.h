@@ -33,11 +33,12 @@ class Camera
      *  Create a camera.
      *
      *  @param type Type of camera.
-     *  @param window Reference to window.
+     *  @param width Width of projection.
+     *  @param height Height of projection.
      *  @param depth Depth of projection.
      *
      */
-    Camera(CameraType type, Window *window, float depth);
+    Camera(CameraType type, std::uint32_t width, std::uint32_t height, float depth);
 
     /**
      *

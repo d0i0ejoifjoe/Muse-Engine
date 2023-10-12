@@ -2,10 +2,13 @@
 
 #define STB_IMAGE_IMPLEMENTATION 1
 #include "graphics/public/stb_image.h"
+#include "log/public/logger.h"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <filesystem>
+#include <fstream>
 #include <tuple>
 
 /**
@@ -15,24 +18,38 @@
  *  @param filename Path to image.
  *  @param flip Whether to flip it on load.
  *
- *  @return Tuple with image data [texels, width, height].
+ *  @return Tuple with image data [texels, width, height, color_channels].
  *
  */
-std::tuple<std::byte *, std::int32_t, std::int32_t> load_image(const char *filename, bool flip)
+std::tuple<std::byte *, std::int32_t, std::int32_t, std::int32_t> load_image(const char *filename, bool flip)
 {
     std::int32_t width = 0;
     std::int32_t height = 0;
+    std::int32_t color_channels = 0;
     std::byte *data = nullptr;
-
-    std::int32_t dummy = 0;
 
     stbi_set_flip_vertically_on_load(flip);
 
-    data = reinterpret_cast<std::byte *>(stbi_load(filename, &width, &height, &dummy, 0));
+    std::stringstream strm{};
+    std::fstream f(filename, std::ios::in | std::ios::binary);
 
-    assert(data != nullptr && "failed to load image");
+    strm << f.rdbuf();
 
-    return {data, width, height};
+    const auto str = strm.str();
+
+    data = reinterpret_cast<std::byte *>(stbi_load_from_memory(reinterpret_cast<const std::uint8_t *>(str.data()),
+                                                               str.length(),
+                                                               &width,
+                                                               &height,
+                                                               &color_channels,
+                                                               0));
+
+    if (data == nullptr)
+    {
+        LOG_WARN(ImageLoading, "Failed to load image!\nImage path: {}\nError string: {}", filename, stbi_failure_reason());
+    }
+
+    return {data, width, height, color_channels};
 }
 
 namespace muse
@@ -55,14 +72,15 @@ Texture *TextureManager::load(std::string_view filename,
                               TextureFormat format,
                               bool flip_image)
 {
-    auto [data, width, height] = load_image(filename.data(), flip_image);
-    return add(data, width, height, sampler_index, format);
+    auto [data, width, height, color_channels] = load_image(filename.data(), flip_image);
+    return add(data, width, height, sampler_index, color_channels, format);
 }
 
 Texture *TextureManager::add(std::byte *data,
                              std::uint32_t width,
                              std::uint32_t height,
                              std::int32_t sampler_index,
+                             std::uint32_t color_channels,
                              TextureFormat format)
 {
     auto sampler = sampler_index == -1 ? default_texture_sampler() : this->sampler(sampler_index + 2);
@@ -74,6 +92,7 @@ Texture *TextureManager::add(std::byte *data,
                                                             format,
                                                             data,
                                                             sampler,
+                                                            color_channels,
                                                             texture_counter_)).get();
     // clang-format on
 }
@@ -103,10 +122,10 @@ CubeMap *TextureManager::load(std::string_view left_filename,
                               TextureFormat format,
                               bool flip_images)
 {
-    auto [data, width, height] = load_image(left_filename.data(), flip_images);
+    auto [data, width, height, color_channels] = load_image(left_filename.data(), flip_images);
 
     // clang-format off
-    std::array<std::tuple<std::byte *, std::uint32_t, std::uint32_t>, 5> images{
+    std::array<std::tuple<std::byte *, std::uint32_t, std::uint32_t, std::uint32_t>, 5> images{
         load_image(right_filename.data(), flip_images),
         load_image(up_filename.data(), flip_images),
         load_image(down_filename.data(), flip_images),
@@ -118,7 +137,8 @@ CubeMap *TextureManager::load(std::string_view left_filename,
     auto match = std::all_of(std::begin(images), std::end(images), [&](const auto &image)
                              {
                                  return std::get<1>(image) == static_cast<const std::uint32_t>(width) &&
-                                        std::get<2>(image) == static_cast<const std::uint32_t>(height);
+                                        std::get<2>(image) == static_cast<const std::uint32_t>(height) &&
+                                        std::get<3>(image) == static_cast<const std::uint32_t>(color_channels);
                              });
 
     assert(match && "dimensions of all six images need to match");
@@ -132,6 +152,7 @@ CubeMap *TextureManager::load(std::string_view left_filename,
                width,
                height,
                sampler_index,
+               color_channels,
                format);
 }
 
@@ -144,6 +165,7 @@ CubeMap *TextureManager::add(std::byte *left_data,
                              std::uint32_t width,
                              std::uint32_t height,
                              std::int32_t sampler_index,
+                             std::uint32_t color_channels,
                              TextureFormat format)
 {
     auto sampler = sampler_index == -1 ? default_cubemap_sampler() : this->sampler(sampler_index + 2);
@@ -160,6 +182,7 @@ CubeMap *TextureManager::add(std::byte *left_data,
                                                              height,
                                                              format,
                                                              sampler,
+                                                             color_channels,
                                                              cubemap_counter_)).get();
     // clang-format on
 }

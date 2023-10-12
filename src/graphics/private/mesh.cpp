@@ -31,7 +31,7 @@ Mesh::Mesh(const std::vector<Vertex> &vertex_data, const std::vector<std::uint32
     , ibo_(sizeof(std::uint32_t) * index_data.size())
     , handle_(0)
     , receive_shadows_(true)
-    , transform_(Transform{})
+    , transform_()
     , element_count_(index_data.size())
     , skeleton_(skeleton)
 {

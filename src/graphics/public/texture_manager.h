@@ -59,6 +59,7 @@ class TextureManager
                  std::uint32_t width,
                  std::uint32_t height,
                  std::int32_t sampler_index,
+                 std::uint32_t color_channels,
                  TextureFormat format);
 
     /**
@@ -144,6 +145,7 @@ class TextureManager
                  std::uint32_t width,
                  std::uint32_t height,
                  std::int32_t sampler_index,
+                 std::uint32_t color_channels,
                  TextureFormat format);
 
     /**

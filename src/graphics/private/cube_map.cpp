@@ -2,43 +2,50 @@
 
 #include "graphics/public/sampler.h"
 
-#include <array>
+#include <tuple>
 
 /**
  *
- *  Convert engine format to opengl format.
+ *  Convert color channels to opengl data format.
  *
- *  @param format Engine format.
+ *  @param color_channels How much color channels has every texel in data buffer.
+ *  @param gamma_correction Does image have gamma correction.
+ *  @param is_depth Whether image contains depth data.
  *
- *  @return Array with opengl types [internal_format, gl_format, gl_type].
+ *  @return Tuple with [internal format, format, type].
  *
  */
-std::array<GLenum, 3> to_opengl_format(muse::TextureFormat format)
+inline std::tuple<GLenum, GLenum, GLenum> to_opengl(std::uint32_t color_channels, bool gamma_correction, bool is_depth)
 {
+    GLenum format = GL_NONE;
     GLenum internal_format = GL_NONE;
-    GLenum gl_format = GL_NONE;
-    GLenum gl_type = GL_NONE;
 
-    switch (format)
+    if (is_depth)
     {
-        case muse::TextureFormat::RGBA:
-            internal_format = GL_RGBA;
-            gl_format = GL_RGBA;
-            gl_type = GL_UNSIGNED_BYTE;
+        return {GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT};
+    }
+
+    switch (color_channels)
+    {
+        case 1:
+            internal_format = GL_RED;
+            format = GL_RED;
             break;
-        case muse::TextureFormat::SRGB_ALPHA:
-            internal_format = GL_SRGB_ALPHA;
-            gl_format = GL_RGBA;
-            gl_type = GL_UNSIGNED_BYTE;
+        case 2:
+            internal_format = GL_RG;
+            format = GL_RG;
             break;
-        case muse::TextureFormat::DEPTH_COMPONENT:
-            internal_format = GL_DEPTH_COMPONENT;
-            gl_format = GL_DEPTH_COMPONENT;
-            gl_type = GL_FLOAT;
+        case 3:
+            internal_format = gamma_correction ? GL_SRGB : GL_RGB;
+            format = GL_RGB;
+            break;
+        case 4:
+            internal_format = gamma_correction ? GL_SRGB_ALPHA : GL_RGBA;
+            format = GL_RGBA;
             break;
     }
 
-    return {internal_format, gl_format, gl_type};
+    return {internal_format, format, GL_UNSIGNED_BYTE};
 }
 
 namespace muse
@@ -46,7 +53,7 @@ namespace muse
 
 CubeMap::CubeMap(std::byte *left_data, std::byte *right_data, std::byte *up_data, std::byte *down_data,
                  std::byte *front_data, std::byte *back_data, std::uint32_t width, std::uint32_t height,
-                 TextureFormat format, Sampler *sampler, std::int32_t index)
+                 TextureFormat format, Sampler *sampler, std::uint32_t color_channels, std::int32_t index)
     : width_(width)
     , height_(height)
     , handle_(0)
@@ -58,12 +65,14 @@ CubeMap::CubeMap(std::byte *left_data, std::byte *right_data, std::byte *up_data
 
     std::array<std::byte *, 6> data = {right_data, left_data, up_data, down_data, back_data, front_data};
 
-    auto gl_formats = to_opengl_format(format);
+    auto [internal_format, gl_format, gl_type] = to_opengl(color_channels,
+                                                           format != TextureFormat::RGBA && format != TextureFormat::DEPTH_COMPONENT,
+                                                           format == TextureFormat::DEPTH_COMPONENT);
 
     for (auto i = 0; i < 6; i++)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl_formats[0], width_, height_, 0, gl_formats[1],
-                     gl_formats[2], data[i]);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internal_format, width_, height_, 0, gl_format,
+                     gl_type, data[i]);
         i++;
     }
 

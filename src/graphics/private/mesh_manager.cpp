@@ -469,7 +469,10 @@ Mesh *MeshManager::load(const std::string &filename, bool flip_uvs)
         LOG_ERROR(MeshManager, std::string("failed to load file\nerror string: ") + importer.GetErrorString());
     }
 
-    assert(scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
+    if (scene->mNumMeshes != 1)
+    {
+        LOG_WARN(MeshLoading, "Can only load on mesh from file at the time. Loading first mesh found");
+    }
 
     return meshes_.emplace_back(process_mesh(scene)).get();
 }
@@ -499,7 +502,10 @@ Mesh *MeshManager::load(const std::string &animation_filename, const std::string
                   std::string("failed to load file animation\nerror string: ") + animation_importer.GetErrorString());
     }
 
-    assert(mesh_scene->mNumMeshes == 1 && "can only load one mesh from file at the time");
+    if (mesh_scene->mNumMeshes != 1)
+    {
+        LOG_WARN(MeshLoading, "Can only load on mesh from file at the time. Loading first mesh found");
+    }
     animation_callback(process_animations(animation_scene));
 
     return meshes_.emplace_back(process_mesh(mesh_scene)).get();

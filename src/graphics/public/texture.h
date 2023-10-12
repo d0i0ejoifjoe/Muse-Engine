@@ -31,6 +31,7 @@ class Texture
      *  @param format Format of image.
      *  @param data Data of image.
      *  @param sampler Sampler to sample texture with.
+     *  @param color_channels How much color channels has loaded image data.
      *  @param index Index of texture.
      *
      */
@@ -39,6 +40,7 @@ class Texture
             TextureFormat format,
             std::byte *data,
             Sampler *sampler,
+            std::uint32_t color_channels,
             std::int32_t index);
 
     /**

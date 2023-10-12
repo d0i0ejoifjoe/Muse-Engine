@@ -9,12 +9,12 @@
 namespace muse
 {
 
-Camera::Camera(CameraType type, Window *window, float depth)
+Camera::Camera(CameraType type, std::uint32_t width, std::uint32_t height, float depth)
     : yaw_(-pi / 2.0f)
     , pitch_(0.0f)
     , fov_(45.0f)
-    , width_(0.0f)
-    , height_(0.0f)
+    , width_(static_cast<float>(width))
+    , height_(static_cast<float>(height))
     , depth_(depth)
     , projection_({1.0f})
     , view_({1.0f})
@@ -23,16 +23,6 @@ Camera::Camera(CameraType type, Window *window, float depth)
     , up_({0.0f, 1.0f, 0.0f})
     , type_(type)
 {
-    std::int32_t width = 0;
-    std::int32_t height = 0;
-
-    SDL_GetWindowSize(window->handle(), &width, &height);
-
-    width_ = static_cast<float>(width);
-    height_ = static_cast<float>(height);
-
-    LOG_INFO(Camera, "Width: {}, Height: {}", width_, height_);
-
     recreate_proj();
     recreate_view();
 }
