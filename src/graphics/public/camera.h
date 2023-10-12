@@ -37,7 +37,7 @@ class Camera
      *  @param depth Depth of projection.
      *
      */
-    Camera(CameraType type, Window &window, float depth);
+    Camera(CameraType type, Window *window, float depth);
 
     /**
      *
@@ -182,6 +182,15 @@ class Camera
      *
      */
     void adjust_fov(float fov);
+
+    /**
+     *
+     *  Get camera's direction.
+     *
+     *  @return Direction vector.
+     *
+     */
+    glm::vec3 direction() const;
 
   private:
     /**

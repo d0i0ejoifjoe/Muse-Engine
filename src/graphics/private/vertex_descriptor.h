@@ -3,6 +3,8 @@
 #include "graphics/public/buffer.h"
 #include "graphics/public/glad.h"
 
+#include <cstdint>
+
 namespace muse
 {
 
@@ -12,7 +14,7 @@ enum class VertexElementType : std::uint8_t
     FLOAT2,
     FLOAT3,
     FLOAT4,
-    INT4,
+    UINT4,
 };
 
 /**
@@ -50,7 +52,7 @@ struct VertexElement
                 count = 4;
                 size = sizeof(float) * count;
                 break;
-            case VertexElementType::INT4:
+            case VertexElementType::UINT4:
                 count = 4;
                 size = sizeof(std::uint32_t) * count;
                 break;
@@ -100,6 +102,8 @@ class VertexDescriptor
             elements_.emplace(std::begin(elements_) + elements_.size(), element);
             offset += element.size;
         }
+
+        size_ = offset;
     }
 
     /**
@@ -178,7 +182,7 @@ inline VertexDescriptor DefaultVertexDescriptor{
     {VertexElementType::FLOAT2},
     {VertexElementType::FLOAT3},
     {VertexElementType::FLOAT3},
-    {VertexElementType::INT4},
+    {VertexElementType::UINT4},
     {VertexElementType::FLOAT4}};
 
 }

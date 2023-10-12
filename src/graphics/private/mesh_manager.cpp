@@ -240,11 +240,12 @@ void process_weights(std::vector<muse::Vertex> &vertices, const aiMesh *mesh, Bo
     {
         auto bone = mesh->mBones[i];
 
-        for (auto k = 0u; k < bone->mNumWeights; k++)
+        for (auto k = 0u; k < 4; k++) // 4 is maximum amount of weights
         {
             auto weight = bone->mWeights[k];
             auto &vertex = vertices.at(weight.mVertexId);
-            vertex.weights[k] = muse::Weight{bone_name_to_index[bone->mName.data], weight.mWeight};
+            vertex.bone_ids[k] = bone_name_to_index[bone->mName.data];
+            vertex.weights[k] = weight.mWeight;
         }
     }
 }
@@ -385,6 +386,21 @@ std::unique_ptr<muse::Mesh> process_mesh(const aiScene *scene)
     auto skeleton = process_skeleton(vertices, mesh, scene);
     auto indices = process_indices(mesh);
 
+    /**auto i = 0u;
+    for (const auto &vertex : vertices)
+    {
+        LOG_INFO(MeshVertices, "ID: {}\nPos: {}\nNorm: {}\nColor: {}\nTexCoord: {}\nTangent: {}\nBitangent: {}\nBoneIDs: {}\nWeights: {}", i,
+                 vertex.position,
+                 vertex.normal,
+                 vertex.color,
+                 vertex.tex_coord,
+                 vertex.tangent,
+                 vertex.bitangent,
+                 vertex.bone_ids,
+                 vertex.weights);
+        i++;
+    }*/
+
     return std::make_unique<muse::Mesh>(vertices, indices, skeleton);
 }
 
@@ -499,4 +515,10 @@ void MeshManager::remove(std::uint32_t index)
     meshes_.erase(std::begin(meshes_) + index);
 }
 
+Mesh *MeshManager::create(const std::vector<Vertex> &vertices,
+                          const std::vector<std::uint32_t> &indices,
+                          const Skeleton &skeleton)
+{
+    return meshes_.emplace_back(std::make_unique<Mesh>(vertices, indices, skeleton)).get();
+}
 }

@@ -40,21 +40,10 @@ class Mesh
 
     /**
      *
-     *  Write vertices to vertex buffer.
-     *
-     *  @param vertex_data Data to write.
+     *  Destroy mesh.
      *
      */
-    void write_data(const std::vector<Vertex> &vertex_data);
-
-    /**
-     *
-     *  Write indics to element buffer.
-     *
-     *  @param index_data Data to write.
-     *
-     */
-    void write_data(const std::vector<std::uint32_t> &index_data);
+    ~Mesh();
 
     /**
      *

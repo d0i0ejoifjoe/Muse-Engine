@@ -5,14 +5,15 @@
 namespace muse
 {
 
-Texture::Texture(std::uint32_t width, std::uint32_t height, TextureFormat format, std::byte *data, Sampler *sampler)
+Texture::Texture(std::uint32_t width, std::uint32_t height, TextureFormat format, std::byte *data, Sampler *sampler, std::int32_t index)
     : width_(width)
     , height_(height)
     , handle_(0)
     , bindless_handle_(0)
     , format_(format)
+    , index_(index)
 {
-    glGenBuffers(1, &handle_);
+    glGenTextures(1, &handle_);
     glBindTexture(GL_TEXTURE_2D, handle_);
 
     switch (format_)
@@ -26,6 +27,11 @@ Texture::Texture(std::uint32_t width, std::uint32_t height, TextureFormat format
         case TextureFormat::DEPTH_COMPONENT:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width_, height_, 0, GL_DEPTH_COMPONENT, GL_FLOAT, data);
             break;
+    }
+
+    if (sampler->specification().use_mipmaps)
+    {
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
 
     bindless_handle_ = glGetTextureSamplerHandleARB(handle_, sampler->handle());
@@ -63,6 +69,11 @@ std::uint32_t Texture::height() const
 TextureFormat Texture::format() const
 {
     return format_;
+}
+
+std::int32_t Texture::index() const
+{
+    return index_;
 }
 
 }

@@ -185,6 +185,10 @@ Window::Window()
     auto success = gladLoadGLLoader(SDL_GL_GetProcAddress);
     assert(success != 0 && "failed to load opengl functions");
 
+    // Enable multisampling and gamma correction
+    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_FRAMEBUFFER_SRGB);
+
     // Get context flags.
     GLint context_flags = GL_NONE;
     glGetIntegerv(GL_CONTEXT_FLAGS, &context_flags);

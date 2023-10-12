@@ -17,6 +17,13 @@ class Skeleton
 {
   public:
     /**
+     * 
+     *  Create an empty skeleton.
+     * 
+    */
+    Skeleton() = default;
+
+    /**
      *
      *  Create a skeleton that has no animation responsible for it.
      *

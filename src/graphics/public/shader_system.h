@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad.h"
+#include "utils/public/include_glm.h"
 
 #include <cstdint>
 #include <optional>
@@ -31,6 +32,13 @@ class ShaderSystem
     ShaderSystem(std::string_view vertex_shader_source,
                  std::string_view fragment_shader_source,
                  std::optional<std::string_view> geometry_shader_source);
+
+    /**
+     *
+     *  Destroy shader system.
+     *
+     */
+    ~ShaderSystem();
 
     /**
      *
@@ -68,13 +76,33 @@ class ShaderSystem
 
     /**
      *
-     *  Set uniform's value (integer).
+     *  Set uniform's value (32bit unsigned integer).
      *
      *  @param uniform_name Name of uniform to set.
      *  @param value New value for uniform.
      *
      */
-    void set_value(const std::string &uniform_name, std::int32_t value);
+    void set_value(const std::string &uniform_name, std::uint32_t value);
+
+    /**
+     *
+     *  Set uniform's value (64bit unsigned integer).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, std::uint64_t value);
+
+    /**
+     *
+     *  Set uniform's value (matrix4x4).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, const glm::mat4 &value);
 
   private:
     /** Handle. */

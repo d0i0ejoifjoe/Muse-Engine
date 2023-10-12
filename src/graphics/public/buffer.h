@@ -162,6 +162,7 @@ class Buffer
         glBindBuffer(Target, handle_);
 
         glBufferSubData(Target, offset_, size, data);
+        advance(size);
 
         glBindBuffer(Target, 0);
     }

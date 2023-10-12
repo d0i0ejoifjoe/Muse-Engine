@@ -45,7 +45,8 @@ struct Vertex
         , tex_coord(tex_coord)
         , tangent(tangent)
         , bitangent(bitangent)
-        , weights()
+        , bone_ids(0)
+        , weights(0.0f)
     {
     }
 
@@ -59,7 +60,7 @@ struct Vertex
      *  @param tex_coord Texture coordinate of vertex.
      *  @param tangent Tangent of vertex.
      *  @param bitangent Bitangent of vertex.
-     *  @param weights Weights of vertex.
+     *  @param weight_array Weights of vertex.
      *
      */
     Vertex(const glm::vec3 &position,
@@ -68,15 +69,21 @@ struct Vertex
            const glm::vec2 &tex_coord,
            const glm::vec3 &tangent,
            const glm::vec3 &bitangent,
-           const std::array<Weight, max_weights> &weights)
+           const std::array<Weight, max_weights> &weight_array)
         : position(position)
         , normal(normal)
         , color(color)
         , tex_coord(tex_coord)
         , tangent(tangent)
         , bitangent(bitangent)
-        , weights(weights)
+        , bone_ids(0)
+        , weights(0.0f)
     {
+        for (auto i = 0u; i < max_weights; i++)
+        {
+            bone_ids[i] = weight_array[i].index;
+            weights[i] = weight_array[i].weight;
+        }
     }
 
     /** Position */
@@ -97,8 +104,11 @@ struct Vertex
     /** Bitangent */
     glm::vec3 bitangent;
 
+    /** Bone IDs */
+    glm::ivec4 bone_ids;
+
     /** Weights */
-    std::array<Weight, max_weights> weights;
+    glm::vec4 weights;
 };
 
 }

@@ -18,6 +18,7 @@ class Sampler;
  *  Handle it's a way to control the texture while bindless handle it's just id of sampler on GPU.
  *
  */
+
 class Texture
 {
   public:
@@ -30,13 +31,15 @@ class Texture
      *  @param format Format of image.
      *  @param data Data of image.
      *  @param sampler Sampler to sample texture with.
+     *  @param index Index of texture.
      *
      */
     Texture(std::uint32_t width,
             std::uint32_t height,
             TextureFormat format,
             std::byte *data,
-            Sampler *sampler);
+            Sampler *sampler,
+            std::int32_t index);
 
     /**
      *
@@ -90,6 +93,15 @@ class Texture
      */
     GLuint64 bindless_handle() const;
 
+    /**
+     *
+     *  Get index of texture.
+     *
+     *  @return Index.
+     *
+     */
+    std::int32_t index() const;
+
   private:
     /** Width */
     std::uint32_t width_;
@@ -105,6 +117,8 @@ class Texture
 
     /** Texture format */
     TextureFormat format_;
-};
 
+    /** Index. */
+    std::int32_t index_;
+};
 }

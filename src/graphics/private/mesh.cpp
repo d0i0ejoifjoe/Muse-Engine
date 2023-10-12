@@ -2,6 +2,25 @@
 
 #include "graphics/private/vertex_descriptor.h"
 #include "graphics/public/skeleton.h"
+#include "log/public/logger.h"
+
+std::pair<GLenum, GLboolean> to_opengl(muse::VertexElementType type)
+{
+    GLenum gl_type = GL_NONE;
+    GLboolean normalize = GL_FALSE;
+    switch (type)
+    {
+        case muse::VertexElementType::FLOAT2: // for all default vectors the type is same
+        case muse::VertexElementType::FLOAT3:
+        case muse::VertexElementType::FLOAT4: gl_type = GL_FLOAT; break;
+        case muse::VertexElementType::UINT4:
+            gl_type = GL_UNSIGNED_INT;
+            normalize = GL_TRUE;
+            break;
+    }
+
+    return {gl_type, normalize};
+}
 
 namespace muse
 {
@@ -13,32 +32,28 @@ Mesh::Mesh(const std::vector<Vertex> &vertex_data, const std::vector<std::uint32
     , handle_(0)
     , receive_shadows_(true)
     , transform_(Transform{})
-    , element_count_(0)
+    , element_count_(index_data.size())
     , skeleton_(skeleton)
 {
     glGenVertexArrays(1, &handle_);
 
-    write_data(vertex_data);
-    write_data(index_data);
-}
+    glBindVertexArray(handle_);
 
-void Mesh::write_data(const std::vector<Vertex> &vertex_data)
-{
     vbo_.write(vertex_data);
+    ibo_.write(index_data);
+
     setup();
 }
 
-void Mesh::write_data(const std::vector<std::uint32_t> &index_data)
+Mesh::~Mesh()
 {
-    ibo_.write(index_data);
-    element_count_ += index_data.size();
-
-    setup();
+    glDeleteVertexArrays(1, &handle_);
 }
 
 void Mesh::bind()
 {
     glBindVertexArray(handle_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_.handle());
 }
 
 void Mesh::setup()
@@ -51,11 +66,13 @@ void Mesh::setup()
     auto index = 0u;
     auto size = DefaultVertexDescriptor.size();
 
-    for (const auto &[_, __, count, offset] : DefaultVertexDescriptor)
+    for (const auto &[type, __, count, offset] : DefaultVertexDescriptor)
     {
+        auto [gl_type, normalize] = to_opengl(type);
         glEnableVertexAttribArray(index);
-        glVertexAttribPointer(index, static_cast<GLint>(count), GL_FLOAT, GL_FALSE, static_cast<GLsizei>(size),
+        glVertexAttribPointer(index, static_cast<GLint>(count), gl_type, normalize, static_cast<GLsizei>(size),
                               reinterpret_cast<void *>(offset));
+
         index++;
     }
 

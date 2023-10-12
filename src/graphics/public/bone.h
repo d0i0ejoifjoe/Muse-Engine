@@ -19,6 +19,13 @@ struct Bone
 {
     /**
      *
+     *  Create an empty bone.
+     *
+     */
+    Bone() = default;
+
+    /**
+     *
      *  Create a bone.
      *
      *  @param name Name of bone.

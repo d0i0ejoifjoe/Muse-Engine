@@ -36,6 +36,7 @@ class CubeMap
      *  @param height Height of all sides.
      *  @param format Format of all sides.
      *  @param sampler Sampler to sample cubemap with.
+     *  @param index Index of cubemap.
      *
      */
     CubeMap(std::byte *left_data,
@@ -47,7 +48,8 @@ class CubeMap
             std::uint32_t width,
             std::uint32_t height,
             TextureFormat format,
-            Sampler *sampler);
+            Sampler *sampler,
+            std::int32_t index);
 
     /**
      *
@@ -92,6 +94,15 @@ class CubeMap
      */
     std::uint32_t height() const;
 
+    /**
+     * 
+     *  Get index of cubemap.
+     * 
+     *  @return Index.
+     * 
+    */
+    std::int32_t index() const;
+
   private:
     /** Width */
     std::uint32_t width_;
@@ -104,6 +115,9 @@ class CubeMap
 
     /** Bindless handle */
     GLuint64 bindless_handle_;
+
+    /** Index */
+    std::int32_t index_;
 };
 
 }

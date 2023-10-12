@@ -13,9 +13,11 @@ IncludeBlocks: Regroup
 AccessModifierOffset: -2
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
+AllowShortIfStatementsOnASingleLine: false
 FixNamespaceComments: false
 ColumnLimit: 0
 AllowShortBlocksOnASingleLine: Never
+AllowShortLambdasOnASingleLine: false
 IncludeCategories:
   - Regex: '^".*"'
     Priority: 1

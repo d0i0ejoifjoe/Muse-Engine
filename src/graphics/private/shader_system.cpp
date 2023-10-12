@@ -2,8 +2,10 @@
 
 #include "log/public/logger.h"
 
+#include <cassert>
 #include <cstdlib>
 
+/** Maximum buffer size. */
 static constexpr auto max_buf_size = 32000u;
 
 /**
@@ -15,6 +17,11 @@ static constexpr auto max_buf_size = 32000u;
  */
 void check_compile_status(GLuint handle)
 {
+    if (handle == 0)
+    {
+        return;
+    }
+
     GLint status = GL_NONE;
     glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
 
@@ -67,6 +74,28 @@ void check_link_status(GLuint handle)
     }
 }
 
+/**
+ *
+ *  Check validation status of opengl program.
+ *
+ *  @param handle Handle to program.
+ *
+ */
+void check_validation_status(GLuint handle)
+{
+    GLint status = GL_NONE;
+    glGetProgramiv(handle, GL_VALIDATE_STATUS, &status);
+
+    if (!status)
+    {
+        char buf[max_buf_size];
+        glGetProgramInfoLog(handle, max_buf_size, nullptr, buf);
+
+        LOG_ERROR(OpenGLShaderSystem, "\nOpenGL Program is invalid\nOpenGL Error log: {}", buf);
+        std::abort();
+    }
+}
+
 namespace muse
 {
 
@@ -92,7 +121,7 @@ ShaderSystem::ShaderSystem(std::string_view vertex_shader_source, std::string_vi
     {
         auto temp = glCreateShader(GL_GEOMETRY_SHADER);
 
-        const char *c_geometry_source = geometry_shader_source.value().data();
+        const char *c_geometry_source = geometry_shader_source->data();
 
         glShaderSource(temp, 1, &c_geometry_source, nullptr);
         glCompileShader(temp);
@@ -115,8 +144,15 @@ ShaderSystem::ShaderSystem(std::string_view vertex_shader_source, std::string_vi
     }
 
     glLinkProgram(handle_);
-
     check_link_status(handle_);
+
+    glValidateProgram(handle_);
+    check_validation_status(handle_);
+}
+
+ShaderSystem::~ShaderSystem()
+{
+    glDeleteProgram(handle_);
 }
 
 void ShaderSystem::bind()
@@ -139,9 +175,18 @@ void ShaderSystem::remove_uniform(const std::string &uniform_name)
     uniform_map_.erase(uniform_name);
 }
 
-void ShaderSystem::set_value(const std::string &uniform_name, std::int32_t value)
+void ShaderSystem::set_value(const std::string &uniform_name, std::uint32_t value)
 {
-    glProgramUniform1i(handle_, uniform_map_[uniform_name], value);
+    glProgramUniform1ui(handle_, uniform_map_[uniform_name], value);
 }
 
+void ShaderSystem::set_value(const std::string &uniform_name, const glm::mat4 &value)
+{
+    glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], 1, GL_FALSE, &value[0][0]);
+}
+
+void ShaderSystem::set_value(const std::string &uniform_name, std::uint64_t value)
+{
+    glProgramUniformHandleui64ARB(handle_, uniform_map_[uniform_name], value);
+}
 }

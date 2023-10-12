@@ -46,11 +46,12 @@ namespace muse
 
 CubeMap::CubeMap(std::byte *left_data, std::byte *right_data, std::byte *up_data, std::byte *down_data,
                  std::byte *front_data, std::byte *back_data, std::uint32_t width, std::uint32_t height,
-                 TextureFormat format, Sampler *sampler)
+                 TextureFormat format, Sampler *sampler, std::int32_t index)
     : width_(width)
     , height_(height)
     , handle_(0)
     , bindless_handle_(0)
+    , index_(index)
 {
     glGenTextures(1, &handle_);
     glBindTexture(GL_TEXTURE_CUBE_MAP, handle_);
@@ -98,4 +99,8 @@ std::uint32_t CubeMap::height() const
     return height_;
 }
 
+std::int32_t CubeMap::index() const
+{
+    return index_;
+}
 }

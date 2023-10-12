@@ -1,12 +1,15 @@
 #include "graphics/public/camera.h"
 
 #include "graphics/public/window.h"
+#include "log/public/logger.h"
 #include "utils/public/utils.h"
+
+#include <SDL.h>
 
 namespace muse
 {
 
-Camera::Camera(CameraType type, Window &window, float depth)
+Camera::Camera(CameraType type, Window *window, float depth)
     : yaw_(-pi / 2.0f)
     , pitch_(0.0f)
     , fov_(45.0f)
@@ -20,15 +23,25 @@ Camera::Camera(CameraType type, Window &window, float depth)
     , up_({0.0f, 1.0f, 0.0f})
     , type_(type)
 {
+    std::int32_t width = 0;
+    std::int32_t height = 0;
+
+    SDL_GetWindowSize(window->handle(), &width, &height);
+
+    width_ = static_cast<float>(width);
+    height_ = static_cast<float>(height);
+
+    LOG_INFO(Camera, "Width: {}, Height: {}", width_, height_);
+
     recreate_proj();
     recreate_view();
 }
 
 void Camera::recreate_direction()
 {
-    direction_.x = std::cos(yaw_) * std::cos(pitch_);
-    direction_.y = std::sin(pitch_);
-    direction_.z = std::sin(yaw_) * std::cos(pitch_);
+    direction_.x = std::cos(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
+    direction_.y = std::sin(glm::radians(pitch_));
+    direction_.z = std::sin(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
 
     direction_ = glm::normalize(direction_);
 }
@@ -48,7 +61,7 @@ void Camera::recreate_proj()
 void Camera::recreate_view()
 {
     recreate_direction();
-    view_ = glm::lookAt(position_, position_ + direction_, up_);
+    view_ = glm::lookAtRH(position_, position_ + direction_, up_);
 }
 
 float Camera::yaw() const
@@ -137,6 +150,11 @@ void Camera::adjust_fov(float fov)
 {
     fov_ += fov;
     recreate_proj();
+}
+
+glm::vec3 Camera::direction() const
+{
+    return direction_;
 }
 
 }

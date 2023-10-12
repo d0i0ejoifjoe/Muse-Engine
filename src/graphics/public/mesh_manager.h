@@ -77,6 +77,19 @@ class MeshManager
      */
     void remove(std::uint32_t index);
 
+    /**
+     * 
+     *  Create a mesh from supplied variables.
+     * 
+     *  @param vertices Vertices.
+     *  @param indices Indices.
+     *  @param skeleton Skeleton.
+     * 
+    */
+    MUSE_NODISCARD Mesh *create(const std::vector<Vertex> &vertices,
+                                const std::vector<std::uint32_t> &indices,
+                                const Skeleton &skeleton);
+
   private:
     /** Meshes. */
     std::vector<std::unique_ptr<Mesh>> meshes_;

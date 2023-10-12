@@ -41,32 +41,41 @@ class Logger
      *  Log message to console.
      *
      *  @param level Log level.
-     *  @param message Text of entry.
      *  @param category Category of entry.
      *  @param filename Filename.
      *  @param line Line.
      *  @param log_file Path to a log file if empty logging to console.
+     *  @param message Text of entry.
      *
      */
-    void log(LogLevel level, const std::string &category, const std::string &filename, std::uint32_t line,
-             const std::string &log_file, const std::string &message);
+    void log(LogLevel level,
+             const std::string &category,
+             const std::string &filename,
+             std::uint32_t line,
+             const std::string &log_file,
+             const std::string &message);
 
     /**
      *
      *  Log message to console.
      *
      *  @param level Log level.
-     *  @param message Text of entry.
      *  @param category Category of entry.
      *  @param filename Filename.
      *  @param line Line.
      *  @param log_file Path to a log file if empty logging to console.
+     *  @param message Text of entry.
      *  @param args Format args.
      *
      */
     template <class... Args>
-    void log(LogLevel level, const std::string &category, const std::string &filename, std::uint32_t line,
-             const std::string &log_file, const std::string &message, Args &&...args)
+    void log(LogLevel level,
+             const std::string &category,
+             const std::string &filename,
+             std::uint32_t line,
+             const std::string &log_file,
+             const std::string &message,
+             Args &&...args)
     {
         auto format_message = format(message, std::forward<Args>(args)...);
 
