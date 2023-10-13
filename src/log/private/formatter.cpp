@@ -28,7 +28,7 @@ std::string Formatter::format(LogLevel level,
     auto now = std::time(0);
 
     std::stringstream strm{};
-    strm << std::put_time(std::localtime(&now), "%T") << ' ' << level << ' ' << '[' << category << '/' << format_filename(filename) << ':' << line << "]: " << message;
+    strm << std::put_time(std::localtime(&now), "%T") << ' ' << level << ' ' << '[' << category << '|' << format_filename(filename) << ':' << line << "]: " << message;
 
     return strm.str();
 }

@@ -118,6 +118,8 @@ message(STATUS "Compile args: ${MUSE_ARGS}")
 message(STATUS "Libraries: ${MUSE_LIBRARIES}")
 message(STATUS "Include directories: ${MUSE_INCLUDE_DIRS}")
 
+list(APPEND MUSE_LIBRARIES "SDL2_image")
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC "${MUSE_DEFS}")
 target_compile_options(${PROJECT_NAME} PUBLIC "${MUSE_ARGS}")
 target_link_libraries(${PROJECT_NAME} PUBLIC "${MUSE_LIBRARIES}")

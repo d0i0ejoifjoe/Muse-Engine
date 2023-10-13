@@ -1,8 +1,10 @@
 #include "graphics/public/mesh_manager.h"
 
 #include "graphics/public/animation.h"
+#include "graphics/public/material.h"
 #include "graphics/public/mesh.h"
 #include "graphics/public/skeleton.h"
+#include "graphics/public/texture_manager.h"
 #include "graphics/public/vertex.h"
 #include "log/public/logger.h"
 
@@ -294,10 +296,14 @@ BoneToNodeMap create_bone_to_node_map(const aiMesh *mesh, const aiScene *scene)
     for (auto i = 0u; i < mesh->mNumBones; i++)
     {
         auto bone = mesh->mBones[i];
+
         aiNode *out_node = nullptr;
 
         find_node(bone->mName, scene->mRootNode, std::addressof(out_node));
-        map[bone] = out_node;
+        if (out_node)
+        {
+            map[bone] = out_node;
+        }
     }
 
     return map;
@@ -337,6 +343,12 @@ void setup_bone_indices(BoneNameToIndexMap &bone_name_to_index, std::uint32_t &i
  */
 muse::Skeleton process_skeleton(std::vector<muse::Vertex> &vertices, const aiMesh *mesh, const aiScene *scene)
 {
+    if (!mesh->mNumBones)
+    {
+        LOG_INFO(Mesh, "Mesh has no skeleton, returning default skeleton");
+        return muse::Skeleton{};
+    }
+
     std::vector<muse::Bone> bones{};
 
     std::uint32_t bone_counter = 0u;
@@ -378,30 +390,83 @@ std::vector<std::uint32_t> process_indices(const aiMesh *mesh)
     return indices;
 }
 
-std::unique_ptr<muse::Mesh> process_mesh(const aiScene *scene)
+std::uint32_t process_texture(muse::TextureManager *tmanager, const aiMaterial *mat, aiTextureType type)
 {
-    auto mesh = scene->mMeshes[0];
+    aiString path{};
 
-    auto vertices = process_vertices(mesh);
-    auto skeleton = process_skeleton(vertices, mesh, scene);
-    auto indices = process_indices(mesh);
-
-    /**auto i = 0u;
-    for (const auto &vertex : vertices)
+    auto get_type_str = [&]() -> std::string
     {
-        LOG_INFO(MeshVertices, "ID: {}\nPos: {}\nNorm: {}\nColor: {}\nTexCoord: {}\nTangent: {}\nBitangent: {}\nBoneIDs: {}\nWeights: {}", i,
-                 vertex.position,
-                 vertex.normal,
-                 vertex.color,
-                 vertex.tex_coord,
-                 vertex.tangent,
-                 vertex.bitangent,
-                 vertex.bone_ids,
-                 vertex.weights);
-        i++;
-    }*/
+        switch (type)
+        {
+            case aiTextureType_DIFFUSE: return "albedo";
+            case aiTextureType_HEIGHT: return "normal";
+            case aiTextureType_DIFFUSE_ROUGHNESS: return "roughness";
+            case aiTextureType_METALNESS: return "metalness";
+            case aiTextureType_SPECULAR: return "specular";
+            case aiTextureType_AMBIENT: return "height";
+            case aiTextureType_AMBIENT_OCCLUSION: return "ao (ambient occulusion)";
+            default: return "";
+        }
 
-    return std::make_unique<muse::Mesh>(vertices, indices, skeleton);
+        return "";
+    };
+
+    if (mat->GetTexture(type, 0, &path) != aiReturn_SUCCESS)
+    {
+        LOG_WARN(Material, "Failed to get path to {} map image", get_type_str());
+        return std::numeric_limits<std::uint32_t>::max();
+    }
+
+    auto *tex = tmanager->load(path.data, -1, muse::TextureFormat::RGBA, false);
+    return tex->index();
+}
+
+muse::Material process_material(muse::TextureManager *tmanager, const aiMaterial *mat)
+{
+    auto albedo = process_texture(tmanager, mat, aiTextureType_DIFFUSE);
+    auto normal = process_texture(tmanager, mat, aiTextureType_HEIGHT);
+    auto roughness = process_texture(tmanager, mat, aiTextureType_DIFFUSE_ROUGHNESS);
+    auto metalness = process_texture(tmanager, mat, aiTextureType_METALNESS);
+    auto specular = process_texture(tmanager, mat, aiTextureType_SPECULAR);
+    auto height = process_texture(tmanager, mat, aiTextureType_AMBIENT);
+    auto ao = process_texture(tmanager, mat, aiTextureType_AMBIENT_OCCLUSION);
+
+    muse::MaterialIndices indices{albedo, normal, roughness, metalness, specular, height, ao};
+    return muse::Material{indices};
+}
+
+std::vector<muse::Mesh *> process_meshes(muse::TextureManager *tmanager,
+                                         muse::MeshManager *manager,
+                                         const std::function<void(const std::vector<muse::Material> &)> &material_callback,
+                                         const aiScene *scene)
+{
+    std::vector<muse::Mesh *> meshes{};
+    std::vector<muse::Material> materials{};
+
+    auto process_materials = material_callback != nullptr;
+
+    for (auto i = 0u; i < scene->mNumMeshes; i++)
+    {
+        auto *mesh = scene->mMeshes[i];
+
+        auto vertices = process_vertices(mesh);
+        auto skeleton = process_skeleton(vertices, mesh, scene);
+        auto indices = process_indices(mesh);
+
+        if (process_materials)
+        {
+            materials.push_back(process_material(tmanager, scene->mMaterials[mesh->mMaterialIndex]));
+        }
+
+        meshes.push_back(manager->create(vertices, indices, skeleton));
+    }
+
+    if (process_materials)
+    {
+        material_callback(materials);
+    }
+
+    return meshes;
 }
 
 std::vector<muse::Animation> process_animations(const aiScene *scene)
@@ -454,7 +519,15 @@ std::vector<muse::Animation> process_animations(const aiScene *scene)
 namespace muse
 {
 
-Mesh *MeshManager::load(const std::string &filename, bool flip_uvs)
+MeshManager::MeshManager(TextureManager *tmanager)
+    : meshes_()
+    , tmanager_(tmanager)
+{
+}
+
+std::vector<Mesh *> MeshManager::load(const std::string &filename,
+                                      const std::function<void(const std::vector<Material> &)> &material_callback,
+                                      bool flip_uvs)
 {
     auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
                                 aiProcess_LimitBoneWeights | aiProcess_FlipUVs
@@ -464,21 +537,21 @@ Mesh *MeshManager::load(const std::string &filename, bool flip_uvs)
     Assimp::Importer importer{};
     const auto *scene = importer.ReadFile(filename, flags);
 
-    if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene || !scene->mRootNode)
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
-        LOG_ERROR(MeshManager, std::string("failed to load file\nerror string: ") + importer.GetErrorString());
+        LOG_ERROR(MeshManager, std::string("failed to load file\nError string: ") + importer.GetErrorString());
     }
 
-    if (scene->mNumMeshes != 1)
-    {
-        LOG_WARN(MeshLoading, "Can only load on mesh from file at the time. Loading first mesh found");
-    }
+    LOG_INFO(MeshCount, "Mesh number: {}", scene->mNumMeshes);
 
-    return meshes_.emplace_back(process_mesh(scene)).get();
+    return process_meshes(tmanager_, this, material_callback, scene);
 }
 
-Mesh *MeshManager::load(const std::string &animation_filename, const std::string &mesh_filename, bool flip_uvs,
-                        std::function<void(const std::vector<Animation> &)> animation_callback)
+std::vector<Mesh *> MeshManager::load(const std::string &animation_filename,
+                                      const std::string &mesh_filename,
+                                      const std::function<void(const std::vector<Material> &)> &material_callback,
+                                      bool flip_uvs,
+                                      const std::function<void(const std::vector<Animation> &)> &animation_callback)
 {
     auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
                                 aiProcess_LimitBoneWeights | aiProcess_FlipUVs
@@ -494,21 +567,20 @@ Mesh *MeshManager::load(const std::string &animation_filename, const std::string
     if (mesh_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !mesh_scene || !mesh_scene->mRootNode)
     {
         LOG_ERROR(MeshManager,
-                  std::string("failed to load file mesh\nerror string: ") + mesh_importer.GetErrorString());
+                  std::string("failed to load file mesh\nError string: ") + mesh_importer.GetErrorString());
     }
     else if (animation_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !animation_scene || !animation_scene->mRootNode)
     {
         LOG_ERROR(MeshManager,
-                  std::string("failed to load file animation\nerror string: ") + animation_importer.GetErrorString());
+                  std::string("failed to load file animation\nError string: ") + animation_importer.GetErrorString());
     }
 
-    if (mesh_scene->mNumMeshes != 1)
+    if (animation_callback != nullptr)
     {
-        LOG_WARN(MeshLoading, "Can only load on mesh from file at the time. Loading first mesh found");
+        animation_callback(process_animations(animation_scene));
     }
-    animation_callback(process_animations(animation_scene));
 
-    return meshes_.emplace_back(process_mesh(mesh_scene)).get();
+    return process_meshes(tmanager_, this, material_callback, mesh_scene);
 }
 
 Mesh *MeshManager::mesh(std::uint32_t index)

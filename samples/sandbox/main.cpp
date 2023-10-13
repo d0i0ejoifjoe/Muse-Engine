@@ -2,12 +2,14 @@
 #include "graphics/private/vertex_descriptor.h"
 #include "graphics/public/animation.h"
 #include "graphics/public/camera.h"
+#include "graphics/public/material.h"
 #include "graphics/public/mesh.h"
 #include "graphics/public/mesh_manager.h"
 #include "graphics/public/shader_system.h"
 #include "graphics/public/texture_manager.h"
 #include "graphics/public/window.h"
 #include "log/public/logger.h"
+#include "utils/public/utils.h"
 
 #include <SDL.h>
 #include <algorithm>
@@ -23,7 +25,7 @@ static muse::Camera camera{muse::CameraType::PERSPECTIVE, width, height, 1000.0f
 static bool playing = true;
 static std::unique_ptr<muse::Window> window;
 static std::unique_ptr<muse::ShaderSystem> sys;
-static muse::Mesh *loaded_mesh = nullptr;
+static std::vector<muse::Mesh *> meshes{};
 static muse::Mesh *mesh = nullptr;
 static muse::Transform model_transform{};
 
@@ -33,15 +35,14 @@ void render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     sys->set_value("proj", camera.projection());
     sys->set_value("view", camera.view());
-    model_transform.set_scale({0.01f, 0.01f, 0.01f});
-    loaded_mesh->set_transform(model_transform);
-    LOG_INFO(ModelMatrix, "Model: {}", model_transform.matrix());
-    sys->set_value("model", loaded_mesh->transform().matrix());
-    loaded_mesh->bind();
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(loaded_mesh->element_count()), GL_UNSIGNED_INT, nullptr);
-    model_transform.set_scale({1.0f, 1.0f, 1.0f});
+    for (const auto &mesh : meshes)
+    {
+        mesh->set_transform(model_transform);
+        sys->set_value("model", mesh->transform().matrix());
+        mesh->bind();
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
+    }
     mesh->set_transform(model_transform);
-    LOG_INFO(ModelMatrix, "Model: {}", model_transform.matrix());
     sys->set_value("model", mesh->transform().matrix());
     mesh->bind();
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
@@ -115,11 +116,9 @@ bool handle_wheel(const muse::Event &e)
     return false;
 }
 
-void a(const std::vector<muse::Animation> &animation)
+void a(const std::vector<muse::Material> &mat)
 {
-    LOG_INFO(Callback, "Callback");
-    LOG_INFO(Callback, "Animation size: {}", animation.size());
-    return;
+    LOG_INFO(MaterialAlbedo, "Albedo: {}", mat[0].albedo_index());
 }
 
 int main()
@@ -132,14 +131,14 @@ int main()
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     tmanager.load("/home/sviatoslav/Documents/px.png", -1, muse::TextureFormat::RGBA, true);
-    tmanager.load("/home/sviatoslav/Documents/grass.jpeg", -1, muse::TextureFormat::RGBA, true);
+    tmanager.load("/home/sviatoslav/Documents/GrassyGrassGruesome.jpg", -1, muse::TextureFormat::RGBA, true);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CW);
 
-    muse::MeshManager manager{};
+    muse::MeshManager manager{std::addressof(tmanager)};
 
     std::vector<muse::Vertex> vertices{
         {{-0.5f, -0.5f, -10.0f}, {}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {}, {}},
@@ -170,7 +169,7 @@ int main()
 
     muse::Skeleton skybox_sk{};*/
 
-    loaded_mesh = manager.load("/home/sviatoslav/Documents/WizardusMaximus.fbx", false);
+    meshes = manager.load("/home/sviatoslav/Documents/Wizardus Maximus.glb", nullptr, false);
     mesh = manager.create(vertices, indices, skeleton);
     //  auto *skybox_mesh = manager.create(skybox_vertices, skybox_indices, skybox_sk);
 
@@ -305,8 +304,11 @@ int main()
     sys = std::make_unique<muse::ShaderSystem>(vertex_source, fragment_source, std::nullopt);
     // auto skybox_sys = std::make_unique<muse::ShaderSystem>(vertex_skybox, fragment_skybox, std::nullopt);
 
+    LOG_INFO(RNG, "Integer: {}", muse::random_int<int>(1, 5));
+    LOG_INFO(RNG, "Float: {}", muse::random_float<float>(0.1f, 0.9f));
+    LOG_INFO(RNG, "Coin flip: {}", muse::flip_coin());
+
     sys->bind();
-    loaded_mesh->bind();
 
     sys->add_uniform("view");
     sys->add_uniform("proj");

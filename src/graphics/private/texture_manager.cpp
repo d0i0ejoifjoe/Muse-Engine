@@ -3,13 +3,40 @@
 #define STB_IMAGE_IMPLEMENTATION 1
 #include "graphics/public/stb_image.h"
 #include "log/public/logger.h"
+#include "utils/public/utils.h"
 
+#include <SDL2/SDL_image.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <tuple>
+
+void flip_image(void *image, std::int32_t w, std::int32_t h, std::int32_t bytes_per_pixel)
+{
+    std::size_t bytes_per_row = w * bytes_per_pixel;
+    std::uint8_t temp[2048];
+    std::uint8_t *bytes = reinterpret_cast<std::uint8_t *>(image);
+
+    for (auto row = 0; row < (h >> 1); row++)
+    {
+        std::uint8_t *row0 = bytes + row * bytes_per_row;
+        std::uint8_t *row1 = bytes + (h - row - 1) * bytes_per_row;
+
+        std::size_t bytes_left = bytes_per_row;
+        while (bytes_left)
+        {
+            std::size_t bytes_copy = bytes_left < sizeof(temp) ? bytes_left : sizeof(temp);
+            std::memcpy(temp, row0, bytes_copy);
+            std::memcpy(row0, row1, bytes_copy);
+            std::memcpy(row1, temp, bytes_copy);
+            row0 += bytes_copy;
+            row1 += bytes_copy;
+            bytes_left -= bytes_copy;
+        }
+    }
+}
 
 /**
  *
@@ -28,8 +55,6 @@ std::tuple<std::byte *, std::int32_t, std::int32_t, std::int32_t> load_image(con
     std::int32_t color_channels = 0;
     std::byte *data = nullptr;
 
-    stbi_set_flip_vertically_on_load(flip);
-
     std::stringstream strm{};
     std::fstream f(filename, std::ios::in | std::ios::binary);
 
@@ -37,17 +62,28 @@ std::tuple<std::byte *, std::int32_t, std::int32_t, std::int32_t> load_image(con
 
     const auto str = strm.str();
 
-    data = reinterpret_cast<std::byte *>(stbi_load_from_memory(reinterpret_cast<const std::uint8_t *>(str.data()),
-                                                               str.length(),
-                                                               &width,
-                                                               &height,
-                                                               &color_channels,
-                                                               0));
-
-    if (data == nullptr)
+    if ((!str.length()) || (!str.data()))
     {
-        LOG_WARN(ImageLoading, "Failed to load image!\nImage path: {}\nError string: {}", filename, stbi_failure_reason());
+        LOG_WARN(ImageLoading, "Failed to read image file!\nImage path: {}", filename);
+        std::abort();
     }
+
+    auto *rw = SDL_RWFromConstMem(reinterpret_cast<const void *>(str.data()), str.length());
+    check_sdl_error();
+
+    auto *s = IMG_Load_RW(rw, SDL_TRUE);
+    check_sdl_error();
+
+    SDL_LockSurface(s);
+    check_sdl_error();
+
+    data = reinterpret_cast<std::byte *>(s->pixels);
+    width = s->w;
+    height = s->h;
+    color_channels = s->format->BytesPerPixel;
+
+    SDL_UnlockSurface(s);
+    check_sdl_error();
 
     return {data, width, height, color_channels};
 }
@@ -62,6 +98,8 @@ TextureManager::TextureManager()
     , texture_counter_(-1)
     , cubemap_counter_(-1)
 {
+    IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
+    check_sdl_error();
 
     add(SamplerSpecification{});
     add(SamplerSpecification{.use_mipmaps = false});
@@ -112,6 +150,7 @@ void TextureManager::remove_sampler(std::uint32_t index)
     samplers_.erase(std::begin(samplers_) + (index + 2));
 }
 
+// FIXME: Something is wrong here i think with cubemaps
 CubeMap *TextureManager::load(std::string_view left_filename,
                               std::string_view right_filename,
                               std::string_view up_filename,

@@ -1,6 +1,7 @@
 #include "graphics/public/texture.h"
 
 #include "graphics/public/sampler.h"
+#include "log/public/logger.h"
 
 #include <tuple>
 
