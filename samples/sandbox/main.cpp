@@ -162,31 +162,11 @@ int main()
 
     muse::Skeleton skeleton{};
 
-    /*std::vector<muse::Vertex> skybox_vertices{
-        {{-1.0f, -1.0f, 1.0f}, {}, {}, {}, {}, {}},
-        {{1.0f, -1.0f, 1.0f}, {}, {}, {}, {}, {}},
-        {{1.0f, -1.0f, -1.0f}, {}, {}, {}, {}, {}},
-        {{-1.0f, 1.0f, 1.0f}, {}, {}, {}, {}, {}},
-        {{-1.0f, -1.0f, -1.0f}, {}, {}, {}, {}, {}},
-        {{1.0f, 1.0f, 1.0f}, {}, {}, {}, {}, {}},
-        {{1.0f, 1.0f, -1.0f}, {}, {}, {}, {}, {}},
-        {{-1.0f, 1.0f, -1.0f}, {}, {}, {}, {}, {}},
-    };
-
-    std::vector<std::uint32_t> skybox_indices{
-        1, 2, 6, 6, 5, 1, 0, 4, 7, 7, 3, 0,
-        4, 5, 6, 6, 7, 4, 0, 3, 2, 2, 1, 0,
-        0, 1, 5, 5, 4, 0, 3, 7, 6, 6, 2, 3};
-
-    muse::Skeleton skybox_sk{};*/
-
     glm::quat rotation{glm::vec3{0.0f, 0.0f, 0.0f}};
     model_transform.set_rotation(rotation);
 
     meshes = manager.load("/home/sviatoslav/Documents/OtherModels/WizardusMaximus.fbx", loaded_animations, false);
     mesh = manager.create(vertices, indices, std::numeric_limits<std::uint32_t>::max());
-
-    //  auto *skybox_mesh = manager.create(skybox_vertices, skybox_indices, skybox_sk);
 
     std::string_view vertex_source = R"(
         #version 450 core
@@ -285,95 +265,7 @@ int main()
         }
     )";
 
-    /*std::string_view vertex_skybox = R"(
-        #version 450 core
-        #extension GL_ARB_bindless_texture : require
-
-        layout(location = 0) in vec3 aPos;
-
-        out vec3 tex_coords;
-
-        uniform mat4 proj;
-        uniform mat4 view;
-
-        void main()
-        {
-            vec4 pos = proj * mat4(mat3(view)) * vec4(aPos, 1.0);
-            gl_Position = pos.xyww;
-            tex_coords = vec3(aPos.x, aPos.y, -aPos.z);
-        }
-    )";
-
-    std::string_view fragment_skybox = R"(
-        #version 450 core
-        #extension GL_ARB_bindless_texture : require
-
-        in vec3 tex_coords;
-        out vec4 out_color;
-
-        uniform samplerCube skybox;
-
-        void main()
-        {
-            out_color = texture(skybox, tex_coords);
-        }
-    )";*/
-
-    /**
-    muse::VBO vbo{sizeof(muse::Vertex) * 3};
-    muse::IBO ibo(sizeof(std::uint32_t) * 3);
-
-    GLuint vao = 0u;
-    glGenVertexArrays(1, &vao);
-
-    glBindVertexArray(vao);
-
-    std::vector<muse::Vertex> vertices{
-        muse::Vertex{{-0.5f, -0.5f, 0.0f}, {}, {1.0f, 0.0f, 0.0f, 1.0f}, {}, {}, {}},
-        muse::Vertex{{0.5f, -0.5f, 0.0f}, {}, {0.0f, 1.0f, 0.0f, 1.0f}, {}, {}, {}},
-        muse::Vertex{{0.0f, 0.5f, 0.0f}, {}, {0.0f, 0.0f, 1.0f, 1.0f}, {}, {}, {}}};
-
-    std::vector<std::uint32_t> indices{0, 1, 2};
-
-    vbo.write(vertices);
-    ibo.write(indices);
-
-    glBindVertexArray(vao);
-
-    auto size = muse::DefaultVertexDescriptor.size();
-    auto index = 0u;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo.handle());
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo.handle());
-
-    for (const auto &element : muse::DefaultVertexDescriptor)
-    {
-        GLenum gl_type = GL_NONE;
-        GLboolean normalize = GL_FALSE;
-        switch (element.type)
-        {
-            case muse::VertexElementType::FLOAT2:
-            case muse::VertexElementType::FLOAT3:
-            case muse::VertexElementType::FLOAT4: gl_type = GL_FLOAT; break;
-            case muse::VertexElementType::UINT4:
-                gl_type = GL_UNSIGNED_INT;
-                normalize = GL_TRUE;
-                break;
-        }
-
-        glEnableVertexAttribArray(index);
-        glVertexAttribPointer(index, static_cast<GLint>(element.count), gl_type, normalize, static_cast<GLsizei>(size), reinterpret_cast<void *>(element.offset));
-        index++;
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glBindVertexArray(0);
-    */
-
     sys = std::make_unique<muse::ShaderSystem>(vertex_source, fragment_source, std::nullopt);
-    // auto skybox_sys = std::make_unique<muse::ShaderSystem>(vertex_skybox, fragment_skybox, std::nullopt);
 
     LOG_INFO(RNG, "Integer: {}", muse::random_int<int>(1, 5));
     LOG_INFO(RNG, "Float: {}", muse::random_float<float>(0.1f, 0.9f));
