@@ -40,6 +40,15 @@ class Animation
               const std::unordered_map<std::string, std::vector<Keyframe>> &frames);
 
     /**
+     * 
+     *  Get name of animation.
+     * 
+     *  @return Name string.
+     * 
+    */
+    std::string name() const;
+
+    /**
      *
      *  Advances in time by "ticks_per_second".
      *

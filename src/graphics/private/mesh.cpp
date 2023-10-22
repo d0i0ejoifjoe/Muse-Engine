@@ -1,6 +1,7 @@
 #include "graphics/public/mesh.h"
 
 #include "graphics/private/vertex_descriptor.h"
+#include "graphics/public/material.h"
 #include "graphics/public/skeleton.h"
 #include "log/public/logger.h"
 
@@ -25,15 +26,14 @@ std::pair<GLenum, GLboolean> to_opengl(muse::VertexElementType type)
 namespace muse
 {
 
-Mesh::Mesh(const std::vector<Vertex> &vertex_data, const std::vector<std::uint32_t> &index_data,
-           const Skeleton &skeleton)
+Mesh::Mesh(const std::vector<Vertex> &vertex_data, const std::vector<std::uint32_t> &index_data, std::uint32_t material_index)
     : vbo_(sizeof(Vertex) * vertex_data.size())
     , ibo_(sizeof(std::uint32_t) * index_data.size())
     , handle_(0)
     , receive_shadows_(true)
     , transform_()
     , element_count_(index_data.size())
-    , skeleton_(skeleton)
+    , material_index_(material_index)
 {
     glGenVertexArrays(1, &handle_);
 
@@ -122,9 +122,8 @@ std::size_t Mesh::element_count() const
     return element_count_;
 }
 
-const Skeleton *Mesh::skeleton() const
+std::uint32_t Mesh::material_index() const
 {
-    return std::addressof(skeleton_);
+    return material_index_;
 }
-
 }

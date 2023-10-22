@@ -1,19 +1,27 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace muse
 {
 
-struct MaterialIndices
+class Texture;
+
+/**
+ *
+ *  Structure that stores pointer to all needed maps for a material.
+ *
+ */
+struct MaterialMaps
 {
-    std::uint32_t albedo;
-    std::uint32_t normal;
-    std::uint32_t roughness;
-    std::uint32_t metalness;
-    std::uint32_t specular;
-    std::uint32_t height;
-    std::uint32_t ao; // Ambient occulusion map
+    Texture *albedo;
+    Texture *normal;
+    Texture *metallic;
+    Texture *roughness;
+    Texture *ao;
+    Texture *specular;
+    Texture *height; // Ambient occulusion map
 };
 
 /**
@@ -30,76 +38,89 @@ class Material
      *
      *  Create a material.
      *
-     *  @param indices All of map indices.
+     *  @param maps All of material maps.
+     *  @param name Name of material.
      *
      */
-    Material(const MaterialIndices &indices);
+    Material(const MaterialMaps &maps, std::string_view name);
 
     /**
      *
-     *  Get albedo map index.
+     *  Get albedo map.
      *
-     *  @return Albedo map index.
+     *  @return Pointer to albedo map.
      *
      */
-    std::uint32_t albedo_index() const;
+    Texture *albedo() const;
 
     /**
      *
-     *  Get normal map index.
+     *  Get normal map.
      *
-     *  @return Normal map index.
+     *  @return Pointer to normal map.
      *
      */
-    std::uint32_t normal_index() const;
+    Texture *normal() const;
 
     /**
      *
-     *  Get roughness map index.
+     *  Get roughness map.
      *
-     *  @return roughness map index.
+     *  @return Pointer to roughness map.
      *
      */
-    std::uint32_t roughness_index() const;
+    Texture *roughness() const;
 
     /**
      *
-     *  Get metalness map index.
+     *  Get metallic map.
      *
-     *  @return Metalness map index.
+     *  @return Pointer to metallic map.
      *
      */
-    std::uint32_t metalness_index() const;
+    Texture *metallic() const;
 
     /**
      *
-     *  Get specular map index.
+     *  Get specular map.
      *
-     *  @return Specular map index.
+     *  @return Pointer to specular map.
      *
      */
-    std::uint32_t specular_index() const;
+    Texture *specular() const;
 
     /**
      *
-     *  Get height map index.
+     *  Get height map.
      *
-     *  @return Height map index.
+     *  @return Pointer to height map.
      *
      */
-    std::uint32_t height_index() const;
+    Texture *height() const;
 
     /**
      *
-     *  Get ao (ambient occulusion) map index.
+     *  Get ao (ambient occulusion) map.
      *
-     *  @return AO map index.
+     *  @return Pointer to AO map.
      *
      */
-    std::uint32_t ao_index() const;
+    Texture *ao() const;
+
+    /**
+     *
+     *  Get name of material.
+     *
+     *  @return Name.
+     *
+     */
+    std::string name() const;
 
   private:
     /** Indices. */
-    MaterialIndices indices_;
+    MaterialMaps maps_;
+
+    /** Name. */
+    std::string name_;
 };
 }

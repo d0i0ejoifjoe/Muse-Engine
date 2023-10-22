@@ -3,6 +3,7 @@
 #include "graphics/public/animation.h"
 #include "graphics/public/camera.h"
 #include "graphics/public/material.h"
+#include "graphics/public/material_manager.h"
 #include "graphics/public/mesh.h"
 #include "graphics/public/mesh_manager.h"
 #include "graphics/public/shader_system.h"
@@ -15,9 +16,11 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <thread>
 
-static constexpr auto speed = 2.0f;
+static constexpr auto speed = 250.0f;
 static constexpr auto sensitivity = 0.1f;
+float delta = 0.0f;
 // FIXME: Make user not provide the width and height of monitor by theirself
 static constexpr auto width = 1920u;
 static constexpr auto height = 1080u;
@@ -25,6 +28,8 @@ static muse::Camera camera{muse::CameraType::PERSPECTIVE, width, height, 1000.0f
 static bool playing = true;
 static std::unique_ptr<muse::Window> window;
 static std::unique_ptr<muse::ShaderSystem> sys;
+static std::unique_ptr<muse::TextureManager> tmanager;
+static std::unique_ptr<muse::MaterialManager> mmanager;
 static std::vector<muse::Mesh *> meshes{};
 static muse::Mesh *mesh = nullptr;
 static muse::Transform model_transform{};
@@ -38,8 +43,9 @@ void render()
     for (const auto &mesh : meshes)
     {
         mesh->set_transform(model_transform);
-        sys->set_value("model", mesh->transform().matrix());
         mesh->bind();
+        sys->set_value("model", mesh->transform().matrix());
+        sys->set_value("tex", mmanager->material(mesh->material_index())->albedo()->bindless_handle());
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
     }
     mesh->set_transform(model_transform);
@@ -53,26 +59,28 @@ bool handle_camera(const muse::Event &e)
 {
     if (e.type() == muse::EventType::KEYBOARD)
     {
+        auto speed_delta = speed * delta;
+
         auto &key = e.get<muse::KeyboardEvent>();
 
         if (key[muse::Key::W] == muse::KeyState::DOWN)
         {
-            camera.translate(camera.direction() * speed);
+            camera.translate(camera.direction() * speed_delta);
         }
 
         if (key[muse::Key::A] == muse::KeyState::DOWN)
         {
-            camera.translate(camera.right() * speed);
+            camera.translate(camera.right() * speed_delta);
         }
 
         if (key[muse::Key::S] == muse::KeyState::DOWN)
         {
-            camera.translate(-camera.direction() * speed);
+            camera.translate(-camera.direction() * speed_delta);
         }
 
         if (key[muse::Key::D] == muse::KeyState::DOWN)
         {
-            camera.translate(-camera.right() * speed);
+            camera.translate(-camera.right() * speed_delta);
         }
 
         if (key[muse::Key::LEFT_ARROW] == muse::KeyState::DOWN)
@@ -116,9 +124,16 @@ bool handle_wheel(const muse::Event &e)
     return false;
 }
 
-void a(const std::vector<muse::Material> &mat)
+void loaded_animations(std::vector<muse::Animation> &&animations,
+                       muse::Skeleton &&skeleton,
+                       std::map<std::string, std::uint32_t, std::less<>> &&map)
 {
-    LOG_INFO(MaterialAlbedo, "Albedo: {}", mat[0].albedo_index());
+    LOG_INFO(BoneCount, "Count: {}", map.size());
+
+    for (const auto &animation : animations)
+    {
+        LOG_INFO(AnimationName, "Name: {}", animation.name());
+    }
 }
 
 int main()
@@ -126,19 +141,15 @@ int main()
     SDL_Init(SDL_INIT_EVERYTHING);
     window = std::make_unique<muse::Window>();
     muse::EventHandler e_handler{};
-    muse::TextureManager tmanager{};
+    tmanager = std::make_unique<muse::TextureManager>();
+    mmanager = std::make_unique<muse::MaterialManager>(tmanager.get());
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
-    tmanager.load("/home/sviatoslav/Documents/px.png", -1, muse::TextureFormat::RGBA, true);
-    tmanager.load("/home/sviatoslav/Documents/GrassyGrassGruesome.jpg", -1, muse::TextureFormat::RGBA, true);
-
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CW);
+    glDepthFunc(GL_LEQUAL);
 
-    muse::MeshManager manager{std::addressof(tmanager)};
+    muse::MeshManager manager{tmanager.get(), mmanager.get()};
 
     std::vector<muse::Vertex> vertices{
         {{-0.5f, -0.5f, -10.0f}, {}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {}, {}},
@@ -155,8 +166,8 @@ int main()
         {{-1.0f, -1.0f, 1.0f}, {}, {}, {}, {}, {}},
         {{1.0f, -1.0f, 1.0f}, {}, {}, {}, {}, {}},
         {{1.0f, -1.0f, -1.0f}, {}, {}, {}, {}, {}},
-        {{-1.0f, -1.0f, -1.0f}, {}, {}, {}, {}, {}},
         {{-1.0f, 1.0f, 1.0f}, {}, {}, {}, {}, {}},
+        {{-1.0f, -1.0f, -1.0f}, {}, {}, {}, {}, {}},
         {{1.0f, 1.0f, 1.0f}, {}, {}, {}, {}, {}},
         {{1.0f, 1.0f, -1.0f}, {}, {}, {}, {}, {}},
         {{-1.0f, 1.0f, -1.0f}, {}, {}, {}, {}, {}},
@@ -169,8 +180,12 @@ int main()
 
     muse::Skeleton skybox_sk{};*/
 
-    meshes = manager.load("/home/sviatoslav/Documents/Wizardus Maximus.glb", nullptr, false);
-    mesh = manager.create(vertices, indices, skeleton);
+    glm::quat rotation{glm::vec3{0.0f, 0.0f, 0.0f}};
+    model_transform.set_rotation(rotation);
+
+    meshes = manager.load("/home/sviatoslav/Documents/OtherModels/WizardusMaximus.fbx", loaded_animations, false);
+    mesh = manager.create(vertices, indices, std::numeric_limits<std::uint32_t>::max());
+
     //  auto *skybox_mesh = manager.create(skybox_vertices, skybox_indices, skybox_sk);
 
     std::string_view vertex_source = R"(
@@ -186,16 +201,29 @@ int main()
         layout(location = 6) in ivec4 aBoneIDs;
         layout(location = 7) in vec4 aWeights;
 
+        out vec4 col; 
         out vec2 tex_coord;
+        flat out ivec4 bone_ids;
+        out vec4 weights;
 
         uniform mat4 view;
         uniform mat4 proj;
         uniform mat4 model;
 
+        //uniform mat4 bones[100];
+
         void main()
         {
+            //mat4 bone = bones[aBoneIDs[0]] * aWeights[0];
+            //bone += bones[aBoneIDs[1]] * aWeights[1];
+            //bone += bones[aBoneIDs[2]] * aWeights[2];
+            //bone += bones[aBoneIDs[3]] * aWeights[3];
+
             gl_Position = proj * view * model * vec4(aPos, 1.0); 
             tex_coord = aTexCoord;
+            col = aColor;
+            bone_ids = aBoneIDs;
+            weights = aWeights;
         }
     )";
 
@@ -205,12 +233,55 @@ int main()
 
         out vec4 out_color;
 
+        in vec4 col;
         in vec2 tex_coord;
         uniform sampler2D tex;
 
+        flat in ivec4 bone_ids;
+        in vec4 weights;
+
         void main()
         {
-            out_color = texture(tex, tex_coord);
+            if(false)
+            {
+                bool found = false;
+
+                for(int i = 0; i < 4; i++)
+                {
+                    if(weights[i] >= 0.7)
+                    {
+                        out_color = vec4(1.0, 0.0, 0.0, 0.0) * weights[i];
+                        found = true;
+                        break;
+                    }
+                    else if(weights[i] >= 0.4 && weights[i] <= 0.6)
+                    {
+                        out_color = vec4(0.0, 1.0, 0.0, 0.0) * weights[i];
+                        found = true;
+                        break;
+                    }
+                    else if(weights[i] >= 0.1)
+                    {
+                        out_color = vec4(1.0, 1.0, 0.0, 0.0) * weights[i];
+                        found = true;
+                        break;
+                    }
+                    else
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+
+                if(!found)
+                {
+                    out_color = vec4(0.0, 0.0, 1.0, 1.0);
+                }
+            }
+            else
+            {
+                out_color = texture(tex, tex_coord);
+            }
         }
     )";
 
@@ -314,13 +385,18 @@ int main()
     sys->add_uniform("proj");
     sys->add_uniform("model");
     sys->add_uniform("tex");
-    sys->set_value("tex", tmanager.texture(1)->bindless_handle());
 
     e_handler.add_callback(handle_camera);
     e_handler.add_callback(handle_wheel);
 
+    auto last = SDL_GetTicks();
+
     while (playing)
     {
+        auto now = SDL_GetTicks();
+        delta = static_cast<float>(now - last) / 1000.0f;
+        last = now;
+
         e_handler.dispatch();
 
         render();

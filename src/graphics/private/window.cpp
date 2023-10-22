@@ -22,7 +22,7 @@
  */
 void gl_debug_output(GLenum source,
                      GLenum type,
-                     auto,
+                     GLenum id,
                      GLenum severity,
                      auto,
                      const char *message,
@@ -31,6 +31,11 @@ void gl_debug_output(GLenum source,
     std::string type_str = "";
     std::string source_str = "";
     std::string severity_str = "";
+
+    if (id == 131185) // we skip this notification it just says that it gonna use video memory for buffer
+    {
+        return;
+    }
 
     // Convert all of OpenGL Enums to strings
     switch (type)

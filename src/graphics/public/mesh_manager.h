@@ -4,6 +4,7 @@
 #include "utils/public/utils.h"
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -12,7 +13,15 @@ namespace muse
 {
 
 class TextureManager;
+class MaterialManager;
 class Material;
+
+/** Useful aliases. */
+using AnimationCallback = std::function<void(std::vector<Animation> &&,
+                                             Skeleton &&,
+                                             std::map<std::string, std::uint32_t, std::less<>> &&)>;
+
+using MaterialCallback = std::function<void(std::vector<Material> &&)>;
 
 /**
  *
@@ -27,7 +36,7 @@ class MeshManager
      *  Create mesh manager.
      *
      */
-    MeshManager(TextureManager *tmanager);
+    explicit MeshManager(TextureManager *tmanager, MaterialManager *mmanager);
 
     /** Default destructor. */
     ~MeshManager() = default;
@@ -37,33 +46,15 @@ class MeshManager
      *  Load mesh.
      *
      *  @param filename Path to model file.
-     *  @param material_callback Called when mesh's material is loaded.
+     *  @param animation_callback Function that called when loaded the animation/s.
      *  @param flip_uvs Whether flip UVs.
      *
      *  @return Pointer to new loaded mesh.
      *
      */
     MUSE_NODISCARD std::vector<Mesh *> load(const std::string &filename,
-                                            const std::function<void(const std::vector<Material> &)> &material_callback,
+                                            const AnimationCallback &animation_callback,
                                             bool flip_uvs);
-
-    /**
-     *
-     *  Load mesh file and file that has all of animations.
-     *
-     *  @param animation_filename Animation filename.
-     *  @param mesh_filename Mesh filename.
-     *  @param flip_uvs Whether to flip UVs.
-     *  @param animation_callback Function that called when loaded the animations.
-     *
-     *  @return Pointer to newly loaded mesh.
-     *
-     */
-    MUSE_NODISCARD std::vector<Mesh *> load(const std::string &animation_filename,
-                                            const std::string &mesh_filename,
-                                            const std::function<void(const std::vector<Material> &)> &material_callback,
-                                            bool flip_uvs,
-                                            const std::function<void(const std::vector<Animation> &)> &animation_callback);
 
     /**
      *
@@ -89,12 +80,14 @@ class MeshManager
      *
      *  @param vertices Vertices.
      *  @param indices Indices.
-     *  @param skeleton Skeleton.
+     *  @param material Mesh's material.
+     *
+     *  @return Pointer to newly created mesh.
      *
      */
     MUSE_NODISCARD Mesh *create(const std::vector<Vertex> &vertices,
                                 const std::vector<std::uint32_t> &indices,
-                                const Skeleton &skeleton);
+                                std::uint32_t material_index);
 
   private:
     /** Meshes. */
@@ -102,6 +95,9 @@ class MeshManager
 
     /** Texture manager. */
     TextureManager *tmanager_;
+
+    /** Material manager. */
+    MaterialManager *mmanager_;
 };
 
 }

@@ -15,6 +15,11 @@ Animation::Animation(std::string_view name, float duration, float ticks_per_seco
 {
 }
 
+std::string Animation::name() const
+{
+    return name_;
+}
+
 void Animation::advance(float delta_time)
 {
     if (running())
@@ -64,7 +69,9 @@ Transform Animation::transform(const std::string &name)
 
     auto end_frame = std::find_if(std::cbegin(keyframes) + 1, std::cend(keyframes),
                                   [&](const Keyframe &keyframe)
-                                  { return keyframe.time > time_; });
+                                  {
+                                      return keyframe.time > time_;
+                                  });
 
     // If frame goes out of bounds walk back frame
     if (end_frame == std::cend(keyframes))

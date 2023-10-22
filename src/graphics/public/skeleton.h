@@ -17,10 +17,10 @@ class Skeleton
 {
   public:
     /**
-     * 
+     *
      *  Create an empty skeleton.
-     * 
-    */
+     *
+     */
     Skeleton() = default;
 
     /**

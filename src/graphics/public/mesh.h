@@ -11,6 +11,8 @@
 namespace muse
 {
 
+class Material;
+
 /**
  *
  *  Class that represents a mesh.
@@ -31,12 +33,12 @@ class Mesh
      *
      *  @param vertex_data Initial vertices of mesh.
      *  @param index_data Initial indices of mesh.
-     *  @param skeleton Skeleton of mesh.
+     *  @param material_index Index of mesh's material.
      *
      */
     Mesh(const std::vector<Vertex> &vertex_data,
          const std::vector<std::uint32_t> &index_data,
-         const Skeleton &skeleton);
+         std::uint32_t material_index);
 
     /**
      *
@@ -127,12 +129,12 @@ class Mesh
 
     /**
      *
-     *  Get skeleton of this mesh.
+     *  Get mesh's material.
      *
-     *  @return Skeleton pointer.
+     *  @return Pointer to material (can be nullptr).
      *
      */
-    const Skeleton *skeleton() const;
+    std::uint32_t material_index() const;
 
   private:
     /**
@@ -160,8 +162,7 @@ class Mesh
     /** Element count */
     std::size_t element_count_;
 
-    /** Skeleton. */
-    Skeleton skeleton_;
+    /** Material. */
+    std::uint32_t material_index_;
 };
-
 }

@@ -25,17 +25,22 @@ struct Weight
      *  Create a weight.
      *
      *  @param index Index of bone.
+     *  @param vertex_id Index of vertex.
      *  @param weight Influence of bone.
      *
      */
-    Weight(std::uint32_t index, float weight)
+    Weight(std::uint32_t index, std::uint32_t vertex_id, float weight)
         : index(index)
+        , vertex_id(vertex_id)
         , weight(weight)
     {
     }
 
     /** Bone index. */
     std::uint32_t index = 0u;
+
+    /** Vertex index. */
+    std::uint32_t vertex_id = 0u;
 
     /** Weight */
     float weight = 0.0f;

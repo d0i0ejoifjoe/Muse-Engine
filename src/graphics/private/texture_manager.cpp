@@ -1,7 +1,5 @@
 #include "graphics/public/texture_manager.h"
 
-#define STB_IMAGE_IMPLEMENTATION 1
-#include "graphics/public/stb_image.h"
 #include "log/public/logger.h"
 #include "utils/public/utils.h"
 
@@ -50,32 +48,27 @@ void flip_image(void *image, std::int32_t w, std::int32_t h, std::int32_t bytes_
  */
 std::tuple<std::byte *, std::int32_t, std::int32_t, std::int32_t> load_image(const char *filename, bool flip)
 {
-    std::int32_t width = 0;
-    std::int32_t height = 0;
-    std::int32_t color_channels = 0;
+    auto width = 0;
+    auto height = 0;
+    auto color_channels = 0;
     std::byte *data = nullptr;
 
-    std::stringstream strm{};
-    std::fstream f(filename, std::ios::in | std::ios::binary);
-
-    strm << f.rdbuf();
-
-    const auto str = strm.str();
-
-    if ((!str.length()) || (!str.data()))
-    {
-        LOG_WARN(ImageLoading, "Failed to read image file!\nImage path: {}", filename);
-        std::abort();
-    }
-
-    auto *rw = SDL_RWFromConstMem(reinterpret_cast<const void *>(str.data()), str.length());
-    check_sdl_error();
-
-    auto *s = IMG_Load_RW(rw, SDL_TRUE);
+    auto *s = IMG_Load(filename);
     check_sdl_error();
 
     SDL_LockSurface(s);
     check_sdl_error();
+
+    if (flip)
+    {
+        flip_image(s->pixels, s->w, s->h, s->format->BytesPerPixel);
+    }
+
+    if (!s->pixels || !s->w || !s->h || !s->format->BytesPerPixel)
+    {
+        LOG_WARN(ImageLoading, "Failed to read image file!\nImage path: {}", filename);
+        std::abort();
+    }
 
     data = reinterpret_cast<std::byte *>(s->pixels);
     width = s->w;

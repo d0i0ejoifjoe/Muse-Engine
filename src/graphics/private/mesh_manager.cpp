@@ -2,21 +2,31 @@
 
 #include "graphics/public/animation.h"
 #include "graphics/public/material.h"
+#include "graphics/public/material_manager.h"
 #include "graphics/public/mesh.h"
 #include "graphics/public/skeleton.h"
 #include "graphics/public/texture_manager.h"
 #include "graphics/public/vertex.h"
 #include "log/public/logger.h"
 
+#if defined(AI_LMW_MAX_WEIGHTS)
+#undef AI_LMW_MAX_WEIGHTS
+#define AI_LMW_MAX_WEIGHTS 4
+#endif
+
+#define STB_IMAGE_IMPLEMENTATION 1
+#include "graphics/public/stb_image.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cstdint>
-#include <unordered_map>
+#include <map>
+#include <stack>
 
 /** Aliases */
 using BoneToNodeMap = std::unordered_map<const aiBone *, aiNode *>;
-using BoneNameToIndexMap = std::unordered_map<std::string, std::uint32_t>;
+using BoneNameToIndexMap = std::map<std::string, std::uint32_t, std::less<>>;
 
 /**
  *
@@ -44,6 +54,20 @@ glm::mat4 convert_matrix(const aiMatrix4x4 &m)
 glm::vec3 convert_vec(const aiVector3D &vec)
 {
     return glm::vec3{vec.x, vec.y, vec.z};
+}
+
+/**
+ *
+ *  Convert assimp vector 3d to GLM vector.
+ *
+ *  @param vec Assimp vector.
+ *
+ *  @return GLM vector.
+ *
+ */
+glm::vec4 convert_vec(const aiColor3D &vec)
+{
+    return glm::vec4{vec.r, vec.g, vec.b, 1.0f};
 }
 
 /**
@@ -76,7 +100,6 @@ glm::vec2 convert_vec(const aiVector2D &vec)
 
 /**
  *
- *  Convert assimp quaternion to GLM quaternion.
  *
  *  @param vec Assimp vector.
  *
@@ -93,11 +116,13 @@ glm::quat convert_quat(const aiQuaternion &q)
  *  Process all vertices in mesh.
  *
  *  @param mesh Mesh to process.
+ *  @param weights Weights to setup.
+ *  @param mat Mesh's material.
  *
  *  @return Vector of vertices in order that they were stored in mesh.
  *
  */
-std::vector<muse::Vertex> process_vertices(const aiMesh *mesh)
+std::vector<muse::Vertex> process_vertices(const aiMesh *mesh, std::vector<muse::Weight> &weights, aiMaterial *mat)
 {
     std::vector<muse::Vertex> vertices{};
 
@@ -105,23 +130,48 @@ std::vector<muse::Vertex> process_vertices(const aiMesh *mesh)
     {
         const auto position = convert_vec(mesh->mVertices[i]);
         const auto normal = convert_vec(mesh->mNormals[i]);
-        glm::vec4 color{};
-        glm::vec2 texture_coordinates{};
+        glm::vec4 color{0.0f};
+        glm::vec2 texture_coordinates{0.0f};
+        glm::vec3 tangent{0.0f};
+        glm::vec3 bitangent{0.0f};
 
         if (mesh->HasVertexColors(0))
         {
             color = convert_vec(mesh->mColors[0][i]);
         }
+        else
+        {
+            aiColor4D col{0.0f, 0.0f, 0.0f, 1.0f};
+            mat->Get(AI_MATKEY_COLOR_DIFFUSE, col);
+
+            color = convert_vec(col);
+        }
 
         if (mesh->HasTextureCoords(0))
         {
             texture_coordinates = convert_vec(mesh->mTextureCoords[0][i]);
+            tangent = convert_vec(mesh->mTangents[i]);
+            bitangent = convert_vec(mesh->mBitangents[i]);
         }
 
-        const auto tangent = convert_vec(mesh->mTangents[i]);
-        const auto bitangent = convert_vec(mesh->mBitangents[i]);
-
         vertices.emplace_back(position, normal, color, texture_coordinates, tangent, bitangent);
+    }
+
+    // if there is no weights we return right away
+    if (weights.empty())
+    {
+        return vertices;
+    }
+
+    for (auto i = 0u; i < vertices.size(); i++)
+    {
+        auto &vertex = vertices[weights[i].vertex_id];
+
+        for (auto j = 0u; j < 4; j++)
+        {
+            vertex.bone_ids[j] = weights[i].index;
+            vertex.weights[j] = weights[i].weight;
+        }
     }
 
     return vertices;
@@ -129,54 +179,44 @@ std::vector<muse::Vertex> process_vertices(const aiMesh *mesh)
 
 /**
  *
- *  Find bone by name in mesh.
- *
- *  @param name Name of bone.
- *  @param mesh Mesh to find bone in.
- *
- */
-const aiBone *find_bone(const aiString &name, const aiMesh *mesh)
-{
-    // Loop all bones and check if name matches the bone name
-    for (auto i = 0u; i < mesh->mNumBones; i++)
-    {
-        auto bone = mesh->mBones[i];
-        if (bone->mName == name)
-        {
-            return bone;
-        }
-    }
-
-    return nullptr;
-}
-
-/**
- *
  *  Process all children of the given bone.
  *
  *  @param bone Bone to process all of it's children.
- *  @param mesh Mesh to find the children in.
- *  @param map Map that maps bone to node.
+ *  @param cached_bones Assimp bones that cached.
  *
  */
-std::vector<muse::Bone> process_children(const aiBone *bone, const aiMesh *mesh, BoneToNodeMap &map)
+std::vector<muse::Bone> process_children(const aiBone *bone, std::vector<aiBone *> &cached_bones)
 {
-    auto node = map[bone];
+    auto *node = bone->mNode;
 
-    if (node->mNumChildren == 0)
+    if (!node->mNumChildren)
     {
         return {};
     }
 
     std::vector<muse::Bone> children{};
+
     for (auto i = 0u; i < node->mNumChildren; i++)
     {
-        auto children_node = node->mChildren[i];
-        auto children_bone = find_bone(children_node->mName, mesh);
+        auto *child = node->mChildren[i];
 
-        children.emplace_back(children_bone->mName.data, convert_matrix(children_bone->mOffsetMatrix),
-                              convert_matrix(children_node->mTransformation), -1,
-                              process_children(children_bone, mesh, map));
+        muse::Bone bone{child->mName.data, {}, convert_matrix(child->mTransformation), -1, {}};
+
+        auto it = std::find_if(std::begin(cached_bones), std::end(cached_bones), [&](const auto &bone)
+                               {
+                                   return bone->mNode == child;
+                               });
+
+        if (it != std::end(cached_bones))
+        {
+            bone = {child->mName.data,
+                    convert_matrix((*it)->mOffsetMatrix),
+                    convert_matrix(child->mTransformation),
+                    -1,
+                    process_children(*it, cached_bones)};
+        }
+
+        children.push_back(bone);
     }
 
     return children;
@@ -186,28 +226,32 @@ std::vector<muse::Bone> process_children(const aiBone *bone, const aiMesh *mesh,
  *
  *  Get root bone.
  *
- *  @param mesh Mesh with all bones.
- *  @param map Map that maps bone to node.
+ *  @param scene Scene with all bones.
+ *  @param cached_bones Cached assimp bones.
  *
  */
-const aiBone *find_root_bone(const aiMesh *mesh, BoneToNodeMap &map)
+const aiBone *find_root_bone(const aiScene *scene, const std::vector<aiBone *> &cached_bones)
 {
     std::vector<aiString> bone_names{};
 
     // Copy all bone names.
-    for (auto i = 0u; i < mesh->mNumBones; i++)
+    for (auto i = 0u; i < scene->mNumMeshes; i++)
     {
-        bone_names.push_back(mesh->mBones[i]->mName);
+        auto *mesh = scene->mMeshes[i];
+
+        for (auto j = 0u; j < mesh->mNumBones; j++)
+        {
+            bone_names.push_back(mesh->mBones[j]->mName);
+        }
     }
 
-    // Loop all bones and compare name of parent of node
-    // and if it's matches increment counter
+    // Loop all bones and compare their name with parent's name of node
+    // and if it matches, increment counter
     // and if counter is 0 means no names match the parent's
     // name so it's the root bone
-    for (auto i = 0u; i < mesh->mNumBones; i++)
+    for (const auto &bone : cached_bones)
     {
-        auto node = map[mesh->mBones[i]];
-
+        auto *node = bone->mNode;
         auto counter = 0u;
 
         for (auto k = 0u; k < bone_names.size(); k++)
@@ -218,9 +262,10 @@ const aiBone *find_root_bone(const aiMesh *mesh, BoneToNodeMap &map)
             }
         }
 
-        if (counter == 0)
+        if (!counter)
         {
-            return mesh->mBones[i];
+            LOG_INFO(NameOfRoot, "Name: {}", bone->mName.data);
+            return bone;
         }
     }
 
@@ -231,82 +276,38 @@ const aiBone *find_root_bone(const aiMesh *mesh, BoneToNodeMap &map)
  *
  *  Setup weights of vertices.
  *
- *  @param vertices Vertices to setup weights of.
- *  @param mesh Mesh to find the weights in.
- *  @param bone_name_to_index Map that's has it's key as bone name and it's value as it's index.
+ *  @param mesh Mesh to process weights of.
+ *  @param map Map that's has it's key as bone name and it's value as it's index.
  *
  */
-void process_weights(std::vector<muse::Vertex> &vertices, const aiMesh *mesh, BoneNameToIndexMap &bone_name_to_index)
+std::vector<muse::Weight> process_weights(const aiMesh *mesh, BoneNameToIndexMap &map)
 {
+    // means model doesn't have any bones so returning empty vector
+    if (map.empty())
+    {
+        return {};
+    }
+
+    std::vector<muse::Weight> weights{};
+
     for (auto i = 0u; i < mesh->mNumBones; i++)
     {
-        auto bone = mesh->mBones[i];
+        auto *bone = mesh->mBones[i];
 
-        for (auto k = 0u; k < 4; k++) // 4 is maximum amount of weights
+        for (auto k = 0u; k < bone->mNumWeights; k++)
         {
             auto weight = bone->mWeights[k];
-            auto &vertex = vertices.at(weight.mVertexId);
-            vertex.bone_ids[k] = bone_name_to_index[bone->mName.data];
-            vertex.weights[k] = weight.mWeight;
-        }
-    }
-}
 
-/**
- *
- *  Find node by name.
- *
- *  @param name Name of node to find.
- *  @param node Node to compare it's name with provided name (from start always supply scene->mRootNode
- *                                                            if you want to look for node in whole hierarchy).
- *  @param out_node If node found set the this pointer to the found node.
- *
- */
-void find_node(aiString &name, aiNode *node, aiNode **out_node)
-{
-    // If node's name matches provided name set the pointer to the node.
-    if (name == node->mName)
-    {
-        *out_node = node;
-    }
-
-    // Else we loop through all of it's children to look for node there if
-    // has no children loop won't start anyway, so no need to add any unnecessary
-    // if statements
-    for (auto i = 0u; i < node->mNumChildren; i++)
-    {
-        find_node(name, node->mChildren[i], out_node);
-    }
-}
-
-/**
- *
- *  Create bone to node map.
- *
- *  @param mesh Mesh that contains all bones for map.
- *  @param scene Scene that contains all nodes for map.
- *
- *  @return New map.
- *
- */
-BoneToNodeMap create_bone_to_node_map(const aiMesh *mesh, const aiScene *scene)
-{
-    BoneToNodeMap map{};
-
-    for (auto i = 0u; i < mesh->mNumBones; i++)
-    {
-        auto bone = mesh->mBones[i];
-
-        aiNode *out_node = nullptr;
-
-        find_node(bone->mName, scene->mRootNode, std::addressof(out_node));
-        if (out_node)
-        {
-            map[bone] = out_node;
+            if (weight.mWeight != 0.0f)
+            {
+                weights.emplace_back(map[bone->mName.data], weight.mVertexId, weight.mWeight);
+            }
         }
     }
 
-    return map;
+    LOG_INFO(TotalVertices, "Total vertex count: {}", mesh->mNumVertices);
+
+    return weights;
 }
 
 /**
@@ -340,37 +341,61 @@ void setup_bone_indices(BoneNameToIndexMap &bone_name_to_index, std::uint32_t &i
  *  @param mesh Mesh to process skeleton of.
  *  @param scene Assimp scene.
  *
+ *  @return Tuple [skeleton, bone_name_to_index_map].
+ *
  */
-muse::Skeleton process_skeleton(std::vector<muse::Vertex> &vertices, const aiMesh *mesh, const aiScene *scene)
+std::tuple<muse::Skeleton, BoneNameToIndexMap> process_skeleton(const aiScene *scene)
 {
-    if (!mesh->mNumBones)
+    // We cache the assimp bones to not have loop over all meshes in scene again and again
+    // but just do it one time
+    std::vector<aiBone *> cache{};
+    for (auto i = 0u; i < scene->mNumMeshes; i++)
     {
-        LOG_INFO(Mesh, "Mesh has no skeleton, returning default skeleton");
-        return muse::Skeleton{};
+        auto *mesh = scene->mMeshes[i];
+
+        for (auto j = 0u; j < mesh->mNumBones; j++)
+        {
+            auto *bone = mesh->mBones[j];
+
+            cache.push_back(bone);
+        }
     }
 
-    std::vector<muse::Bone> bones{};
-
-    std::uint32_t bone_counter = 0u;
-    BoneNameToIndexMap bone_name_to_index{};
-
-    // Get bone to node map.
-    BoneToNodeMap bone_to_node = create_bone_to_node_map(mesh, scene);
+    if (!cache.size())
+    {
+        LOG_WARN(NoSkeleton, "Model doesn't have any bones, returning default skeleton");
+        return std::make_tuple(muse::Skeleton{}, BoneNameToIndexMap{});
+    }
 
     // Get root bone.
-    auto root = find_root_bone(mesh, bone_to_node);
-    auto children = process_children(root, mesh, bone_to_node);
+    auto root = find_root_bone(scene, cache);
 
-    muse::Bone root_bone{root->mName.data, convert_matrix(root->mOffsetMatrix),
-                         convert_matrix(bone_to_node[root]->mTransformation), -1, children};
+    cache.erase(std::find_if(std::cbegin(cache), std::cend(cache), [&](const aiBone *bone)
+                             {
+                                 return bone == root;
+                             }));
+
+    auto children = process_children(root, cache);
+
+    muse::Bone root_bone{
+        root->mName.data,
+        convert_matrix(root->mOffsetMatrix),
+        convert_matrix(root->mNode->mTransformation),
+        -1, children};
+
+    // Needed to setup indices
+    std::uint32_t bone_counter = 0u;
+    BoneNameToIndexMap bone_name_to_index{};
 
     // Setup all of indices.
     setup_bone_indices(bone_name_to_index, bone_counter, root_bone);
 
-    // Setup all of weights.
-    process_weights(vertices, mesh, bone_name_to_index);
+    for (const auto &[name, index] : bone_name_to_index)
+    {
+        LOG_INFO(Map, "Name: {}\nIndex: {}", name, index);
+    }
 
-    return muse::Skeleton{root_bone};
+    return std::make_tuple(muse::Skeleton{root_bone}, std::move(bone_name_to_index));
 }
 
 std::vector<std::uint32_t> process_indices(const aiMesh *mesh)
@@ -390,83 +415,75 @@ std::vector<std::uint32_t> process_indices(const aiMesh *mesh)
     return indices;
 }
 
-std::uint32_t process_texture(muse::TextureManager *tmanager, const aiMaterial *mat, aiTextureType type)
+std::uint32_t process_texture(const aiMaterial *mat,
+                              const aiScene *scene,
+                              aiTextureType type,
+                              muse::TextureManager *tmanager,
+                              const std::string &dir)
 {
     aiString path{};
 
-    auto get_type_str = [&]() -> std::string
+    // Diffuse is only texture that we can gamma correct
+    auto format = type == aiTextureType_DIFFUSE ? muse::TextureFormat::SRGB_ALPHA : muse::TextureFormat::RGBA;
+
+    if (mat->GetTextureCount(type) != 0 && mat->GetTexture(type, 0, &path) == aiReturn_SUCCESS)
     {
-        switch (type)
+        // if it is embedded texture means it is stored in model file
+        // we use assimp to help us load it
+        if (auto tex = scene->GetEmbeddedTexture(path.data); tex)
         {
-            case aiTextureType_DIFFUSE: return "albedo";
-            case aiTextureType_HEIGHT: return "normal";
-            case aiTextureType_DIFFUSE_ROUGHNESS: return "roughness";
-            case aiTextureType_METALNESS: return "metalness";
-            case aiTextureType_SPECULAR: return "specular";
-            case aiTextureType_AMBIENT: return "height";
-            case aiTextureType_AMBIENT_OCCLUSION: return "ao (ambient occulusion)";
-            default: return "";
+            auto w = 0;
+            auto h = 0;
+            auto color_channels = 0;
+            std::byte *data = nullptr;
+
+            // if height is 0 we need to decode image data, we will use stb_image for this
+            if (!tex->mHeight)
+            {
+                // FIXME: Determine if we should flip image or not
+                stbi_set_flip_vertically_on_load(true);
+
+                data = reinterpret_cast<std::byte *>(stbi_load_from_memory(reinterpret_cast<stbi_uc *>(tex->pcData),
+                                                                           tex->mWidth,
+                                                                           &w,
+                                                                           &h,
+                                                                           &color_channels,
+                                                                           4));
+            }
+            else // else we just proceed
+            {
+                w = tex->mWidth;
+                h = tex->mHeight;
+                color_channels = tex->CheckFormat("jpg") ? 3 : 4;
+                data = reinterpret_cast<std::byte *>(tex->pcData);
+            }
+
+            // we want all textures/images registered in texture manager
+            return tmanager->add(data, w, h, -1, color_channels, format)->index();
         }
-
-        return "";
-    };
-
-    if (mat->GetTexture(type, 0, &path) != aiReturn_SUCCESS)
-    {
-        LOG_WARN(Material, "Failed to get path to {} map image", get_type_str());
-        return std::numeric_limits<std::uint32_t>::max();
+        else
+        {
+            // we want all textures/images registered in texture manager
+            return tmanager->load(dir + std::string(path.data), -1, format, false)->index();
+        }
     }
 
-    auto *tex = tmanager->load(path.data, -1, muse::TextureFormat::RGBA, false);
-    return tex->index();
+    return std::numeric_limits<std::uint32_t>::max();
 }
 
-muse::Material process_material(muse::TextureManager *tmanager, const aiMaterial *mat)
+std::uint32_t process_material(const aiMaterial *mat,
+                               const aiScene *scene,
+                               muse::TextureManager *tmanager,
+                               muse::MaterialManager *mmanager,
+                               const std::string &dir)
 {
-    auto albedo = process_texture(tmanager, mat, aiTextureType_DIFFUSE);
-    auto normal = process_texture(tmanager, mat, aiTextureType_HEIGHT);
-    auto roughness = process_texture(tmanager, mat, aiTextureType_DIFFUSE_ROUGHNESS);
-    auto metalness = process_texture(tmanager, mat, aiTextureType_METALNESS);
-    auto specular = process_texture(tmanager, mat, aiTextureType_SPECULAR);
-    auto height = process_texture(tmanager, mat, aiTextureType_AMBIENT);
-    auto ao = process_texture(tmanager, mat, aiTextureType_AMBIENT_OCCLUSION);
+    // Process all textures
+    muse::MaterialIndices indices{};
+    indices.albedo = process_texture(mat, scene, aiTextureType_DIFFUSE, tmanager, dir);
 
-    muse::MaterialIndices indices{albedo, normal, roughness, metalness, specular, height, ao};
-    return muse::Material{indices};
-}
+    mmanager->add(indices, mat->GetName().data);
 
-std::vector<muse::Mesh *> process_meshes(muse::TextureManager *tmanager,
-                                         muse::MeshManager *manager,
-                                         const std::function<void(const std::vector<muse::Material> &)> &material_callback,
-                                         const aiScene *scene)
-{
-    std::vector<muse::Mesh *> meshes{};
-    std::vector<muse::Material> materials{};
-
-    auto process_materials = material_callback != nullptr;
-
-    for (auto i = 0u; i < scene->mNumMeshes; i++)
-    {
-        auto *mesh = scene->mMeshes[i];
-
-        auto vertices = process_vertices(mesh);
-        auto skeleton = process_skeleton(vertices, mesh, scene);
-        auto indices = process_indices(mesh);
-
-        if (process_materials)
-        {
-            materials.push_back(process_material(tmanager, scene->mMaterials[mesh->mMaterialIndex]));
-        }
-
-        meshes.push_back(manager->create(vertices, indices, skeleton));
-    }
-
-    if (process_materials)
-    {
-        material_callback(materials);
-    }
-
-    return meshes;
+    return mmanager->counter();
 }
 
 std::vector<muse::Animation> process_animations(const aiScene *scene)
@@ -516,71 +533,73 @@ std::vector<muse::Animation> process_animations(const aiScene *scene)
     return animations;
 }
 
+std::vector<muse::Mesh *> process_meshes(muse::MeshManager *manager,
+                                         muse::TextureManager *tmanager,
+                                         muse::MaterialManager *mmanager,
+                                         const muse::AnimationCallback &animation_callback,
+                                         const aiScene *scene,
+                                         const std::string &dir)
+{
+    std::vector<muse::Mesh *> meshes{};
+
+    // one skeleton per model
+    auto [skeleton, bone_name_to_index_map] = process_skeleton(scene);
+
+    for (auto i = 0u; i < scene->mNumMeshes; i++)
+    {
+        auto *mesh = scene->mMeshes[i];
+        auto *mat = scene->mMaterials[mesh->mMaterialIndex];
+
+        auto weights = process_weights(mesh, bone_name_to_index_map);
+        auto vertices = process_vertices(mesh, weights, mat);
+        auto indices = process_indices(mesh);
+        auto mat_index = process_material(mat, scene, tmanager, mmanager, dir);
+
+        meshes.push_back(manager->create(vertices, indices, mat_index));
+    }
+
+    if (animation_callback != nullptr && scene->mNumAnimations != 0)
+    {
+        animation_callback(process_animations(scene), std::move(skeleton), std::move(bone_name_to_index_map));
+    }
+
+    return meshes;
+}
+
 namespace muse
 {
 
-MeshManager::MeshManager(TextureManager *tmanager)
+MeshManager::MeshManager(TextureManager *tmanager, MaterialManager *mmanager)
     : meshes_()
     , tmanager_(tmanager)
+    , mmanager_(mmanager)
 {
 }
 
 std::vector<Mesh *> MeshManager::load(const std::string &filename,
-                                      const std::function<void(const std::vector<Material> &)> &material_callback,
+                                      const AnimationCallback &animation_callback,
                                       bool flip_uvs)
 {
-    auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
+    auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData |
                                 aiProcess_LimitBoneWeights | aiProcess_FlipUVs
-                          : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
+                          : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData |
                                 aiProcess_LimitBoneWeights;
 
     Assimp::Importer importer{};
+    importer.SetPropertyInteger(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, 0);
+    importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
+
     const auto *scene = importer.ReadFile(filename, flags);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
-        LOG_ERROR(MeshManager, std::string("failed to load file\nError string: ") + importer.GetErrorString());
+        LOG_ERROR(MeshManager, "failed to load file\nError string: {}", importer.GetErrorString());
     }
 
-    LOG_INFO(MeshCount, "Mesh number: {}", scene->mNumMeshes);
+    auto pos = filename.find_last_of('/');
+    std::string dir = filename.substr(0, pos + 1);
 
-    return process_meshes(tmanager_, this, material_callback, scene);
-}
-
-std::vector<Mesh *> MeshManager::load(const std::string &animation_filename,
-                                      const std::string &mesh_filename,
-                                      const std::function<void(const std::vector<Material> &)> &material_callback,
-                                      bool flip_uvs,
-                                      const std::function<void(const std::vector<Animation> &)> &animation_callback)
-{
-    auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
-                                aiProcess_LimitBoneWeights | aiProcess_FlipUVs
-                          : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
-                                aiProcess_LimitBoneWeights;
-
-    Assimp::Importer animation_importer{};
-    Assimp::Importer mesh_importer{};
-
-    const auto *mesh_scene = mesh_importer.ReadFile(mesh_filename, flags);
-    const auto *animation_scene = animation_importer.ReadFile(animation_filename, flags);
-
-    if (mesh_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !mesh_scene || !mesh_scene->mRootNode)
-    {
-        LOG_ERROR(MeshManager,
-                  std::string("failed to load file mesh\nError string: ") + mesh_importer.GetErrorString());
-    }
-    else if (animation_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !animation_scene || !animation_scene->mRootNode)
-    {
-        LOG_ERROR(MeshManager,
-                  std::string("failed to load file animation\nError string: ") + animation_importer.GetErrorString());
-    }
-
-    if (animation_callback != nullptr)
-    {
-        animation_callback(process_animations(animation_scene));
-    }
-
-    return process_meshes(tmanager_, this, material_callback, mesh_scene);
+    return process_meshes(this, tmanager_, mmanager_, animation_callback, scene, dir);
 }
 
 Mesh *MeshManager::mesh(std::uint32_t index)
@@ -595,8 +614,8 @@ void MeshManager::remove(std::uint32_t index)
 
 Mesh *MeshManager::create(const std::vector<Vertex> &vertices,
                           const std::vector<std::uint32_t> &indices,
-                          const Skeleton &skeleton)
+                          std::uint32_t material_index)
 {
-    return meshes_.emplace_back(std::make_unique<Mesh>(vertices, indices, skeleton)).get();
+    return meshes_.emplace_back(std::make_unique<Mesh>(vertices, indices, material_index)).get();
 }
 }
