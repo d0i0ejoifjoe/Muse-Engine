@@ -1,6 +1,8 @@
 #pragma once
 
-#include "transform.h"
+#include "graphics/public/transform.h"
+
+#include <chrono>
 
 namespace muse
 {
@@ -14,7 +16,7 @@ namespace muse
 struct Keyframe
 {
     /** Time of keyframe. */
-    float time;
+    std::chrono::milliseconds time;
 
     /** Transformation to apply at this time. */
     Transform transform;

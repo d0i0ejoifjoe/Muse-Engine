@@ -1,7 +1,8 @@
 #pragma once
 
-#include "utils/public/include_glm.h"
-#include "weight.h"
+#include "graphics/public/animation/weight.h"
+#include "utils/public/matrix4.h"
+#include "utils/public/vector2.h"
 
 #include <array>
 
@@ -33,21 +34,26 @@ struct Vertex
      *  @param bitangent Bitangent of vertex.
      *
      */
-    Vertex(const glm::vec3 &position,
-           const glm::vec3 &normal,
-           const glm::vec4 &color,
-           const glm::vec2 &tex_coord,
-           const glm::vec3 &tangent,
-           const glm::vec3 &bitangent)
+    Vertex(const Vector3 &position,
+           const Vector3 &normal,
+           const Vector4 &color,
+           const Vector2 &tex_coord,
+           const Vector3 &tangent,
+           const Vector3 &bitangent)
         : position(position)
         , normal(normal)
         , color(color)
         , tex_coord(tex_coord)
         , tangent(tangent)
         , bitangent(bitangent)
-        , bone_ids(0)
-        , weights(0.0f)
+        , bone_ids()
+        , weights()
     {
+        for (auto i = 0u; i < max_weights; i++)
+        {
+            bone_ids[i] = -1;
+            weights[i] = 0.0f;
+        }
     }
 
     /**
@@ -63,12 +69,12 @@ struct Vertex
      *  @param weight_array Weights of vertex.
      *
      */
-    Vertex(const glm::vec3 &position,
-           const glm::vec3 &normal,
-           const glm::vec4 &color,
-           const glm::vec2 &tex_coord,
-           const glm::vec3 &tangent,
-           const glm::vec3 &bitangent,
+    Vertex(const Vector3 &position,
+           const Vector3 &normal,
+           const Vector4 &color,
+           const Vector2 &tex_coord,
+           const Vector3 &tangent,
+           const Vector3 &bitangent,
            const std::array<Weight, max_weights> &weight_array)
         : position(position)
         , normal(normal)
@@ -76,8 +82,8 @@ struct Vertex
         , tex_coord(tex_coord)
         , tangent(tangent)
         , bitangent(bitangent)
-        , bone_ids(0)
-        , weights(0.0f)
+        , bone_ids()
+        , weights()
     {
         for (auto i = 0u; i < max_weights; i++)
         {
@@ -87,28 +93,28 @@ struct Vertex
     }
 
     /** Position */
-    glm::vec3 position;
+    Vector3 position;
 
     /** Normal */
-    glm::vec3 normal;
+    Vector3 normal;
 
     /** Color */
-    glm::vec4 color;
+    Vector4 color;
 
     /** Texture coordinate */
-    glm::vec2 tex_coord;
+    Vector2 tex_coord;
 
     /** Tangent */
-    glm::vec3 tangent;
+    Vector3 tangent;
 
     /** Bitangent */
-    glm::vec3 bitangent;
+    Vector3 bitangent;
 
     /** Bone IDs */
-    glm::ivec4 bone_ids;
+    std::array<std::int32_t, 4> bone_ids;
 
     /** Weights */
-    glm::vec4 weights;
+    Vector4 weights;
 };
 
 }

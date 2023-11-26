@@ -30,7 +30,7 @@ class TextureManager
      *  Load image and create a texture.
      *
      *  @param filename Path to image.
-     *  @param sampler_index Index of sampler to use on texture (-1 if you want to use default sampler).
+     *  @param sampler Sampler to use (nullptr for default).
      *  @param format Format of texture.
      *  @param flip_image Whether to flip image when loaded.
      *
@@ -38,7 +38,7 @@ class TextureManager
      *
      */
     Texture *load(std::string_view filename,
-                  std::int32_t sampler_index,
+                  Sampler *sampler,
                   TextureFormat format,
                   bool flip_image);
 
@@ -49,7 +49,8 @@ class TextureManager
      *  @param data Texels of texture.
      *  @param width Width of texture.
      *  @param height Height of texture.
-     *  @param sampler_index Index of sampler to use on texture (-1 if you want to use default sampler).
+     *  @param sampler Sampler to use (nullptr for default).
+     *  @param color_channels Number of bytes per color.
      *  @param format Format of texture.
      *
      *  @return Pointer to newly created texture.
@@ -58,7 +59,7 @@ class TextureManager
     Texture *add(std::byte *data,
                  std::uint32_t width,
                  std::uint32_t height,
-                 std::int32_t sampler_index,
+                 Sampler *sampler,
                  std::uint32_t color_channels,
                  TextureFormat format);
 
@@ -70,6 +71,24 @@ class TextureManager
      *
      */
     void remove_texture(std::uint32_t index);
+
+    /**
+     *
+     *  Get a blank texture.
+     *
+     *  @return Pointer to blank texture (just white).
+     *
+     */
+    Texture *blank_texture() const;
+
+    /**
+     *
+     *  Get a blank cubemap.
+     *
+     *  @return Pointer to blank texture (just white).
+     *
+     */
+    CubeMap *blank_cubemap() const;
 
     /**
      *
@@ -101,7 +120,7 @@ class TextureManager
      *  @param down_filename Path to down side image.
      *  @param front_filename Path to front side image.
      *  @param back_filename Path to back side image.
-     *  @param sampler_index Index of sampler to use on cubemap (can't have mipmaps, -1 if you want to use default sampler).
+     *  @param sampler Sampler to use (nullptr for default).
      *  @param format Format of all images.
      *  @param flip_images Whether to flip images when loaded.
      *
@@ -114,7 +133,7 @@ class TextureManager
                   std::string_view down_filename,
                   std::string_view front_filename,
                   std::string_view back_filename,
-                  std::int32_t sampler_index,
+                  Sampler *sampler,
                   TextureFormat format,
                   bool flip_images);
 
@@ -130,7 +149,7 @@ class TextureManager
      *  @param back_data Data of back side image.
      *  @param width Width of all six images (needs to match for all images).
      *  @param height Height of all six images (needs to match for all images).
-     *  @param sampler_index Index of sampler to use on cubemap (can't have mipmaps, -1 if you want to use default sampler).
+     *  @param sampler Sampler to use (nullptr for default).
      *  @param format Format of all images.
      *
      *  @return Pointer to newly created cubemap.
@@ -144,7 +163,7 @@ class TextureManager
                  std::byte *back_data,
                  std::uint32_t width,
                  std::uint32_t height,
-                 std::int32_t sampler_index,
+                 Sampler *sampler,
                  std::uint32_t color_channels,
                  TextureFormat format);
 
@@ -166,7 +185,7 @@ class TextureManager
      *  @return Pointer to sampler.
      *
      */
-    Sampler *sampler(std::uint32_t index);
+    Sampler *sampler(std::uint32_t index) const;
 
     /**
      *
@@ -177,7 +196,7 @@ class TextureManager
      *  @return Pointer to texture.
      *
      */
-    Texture *texture(std::uint32_t index);
+    Texture *texture(std::uint32_t index) const;
 
     /**
      *
@@ -188,7 +207,7 @@ class TextureManager
      *  @return Pointer to cubemap.
      *
      */
-    CubeMap *cubemap(std::uint32_t index);
+    CubeMap *cubemap(std::uint32_t index) const;
 
     /**
      *
@@ -197,7 +216,7 @@ class TextureManager
      *  @return Pointer to default sampler.
      *
      */
-    Sampler *default_texture_sampler();
+    Sampler *default_texture_sampler() const;
 
     /**
      *
@@ -206,7 +225,34 @@ class TextureManager
      *  @return Pointer to default sampler.
      *
      */
-    Sampler *default_cubemap_sampler();
+    Sampler *default_cubemap_sampler() const;
+
+    /**
+     *
+     *  Get texture count.
+     *
+     *  @return Texture count.
+     *
+     */
+    std::size_t texture_count() const;
+
+    /**
+     *
+     *  Get cubemap count.
+     *
+     *  @return Cubemap count.
+     *
+     */
+    std::size_t cubemap_count() const;
+
+    /**
+     *
+     *  Get sampler count.
+     *
+     *  @return Sampler count.
+     *
+     */
+    std::size_t sampler_count() const;
 
   private:
     /** Textures */
@@ -217,9 +263,6 @@ class TextureManager
 
     /** Samplers */
     std::vector<std::unique_ptr<Sampler>> samplers_;
-
-    /** Counters */
-    std::int32_t texture_counter_;
-    std::int32_t cubemap_counter_;
 };
+
 }

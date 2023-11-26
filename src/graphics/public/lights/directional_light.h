@@ -1,7 +1,7 @@
 #pragma once
 
 #include "graphics/public/lights/light.h"
-#include "utils/public/include_glm.h"
+#include "utils/public/matrix4.h"
 
 namespace muse
 {
@@ -37,7 +37,7 @@ class DirectionalLight : public Light
      *  @return Projection matrix.
      *
      */
-    glm::mat4 projection() const override;
+    Matrix4 projection() const override;
 
     /**
      *
@@ -46,7 +46,7 @@ class DirectionalLight : public Light
      *  @return View matrix.
      *
      */
-    glm::mat4 view() const override;
+    Matrix4 view() const override;
 
     /**
      *
@@ -73,7 +73,7 @@ class DirectionalLight : public Light
      *  @param direction New direction.
      *
      */
-    void set_direction(const glm::vec3 &direction) override;
+    void set_direction(const Vector3 &direction) override;
 
     /**
      *
@@ -82,17 +82,17 @@ class DirectionalLight : public Light
      *  @return Direction vector.
      *
      */
-    glm::vec3 direction() const override;
+    Vector3 direction() const override;
 
   private:
     /** Light's direction. */
-    glm::vec3 direction_;
+    Vector3 direction_;
 
     /** Projection matrix. */
-    glm::mat4 projection_;
+    Matrix4 projection_;
 
     /** View matrix. */
-    glm::mat4 view_;
+    Matrix4 view_;
 
     /** Whether light casts shadows. */
     bool casts_shadows_;

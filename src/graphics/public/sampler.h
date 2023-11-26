@@ -1,7 +1,7 @@
 #pragma once
 
 #include "glad.h"
-#include "utils/public/include_glm.h"
+#include "utils/public/vector4.h"
 
 namespace muse
 {
@@ -39,7 +39,10 @@ struct SamplerSpecification
 
     bool use_mipmaps = true;
 
-    glm::vec4 border_color = {1.0f, 1.0f, 1.0f, 1.0f};
+    Vector4 border_color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    bool operator==(const SamplerSpecification &spec) const = default;
+    bool operator!=(const SamplerSpecification &spec) const = default;
 };
 
 /**

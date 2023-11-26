@@ -10,6 +10,7 @@
 #include <numbers>
 #include <random>
 #include <tuple>
+#include <utility>
 
 namespace muse
 {
@@ -23,6 +24,37 @@ inline constexpr auto pi = std::numbers::pi_v<float>;
 
 /**
  *
+ *  Convert given degrees to radians.
+ *
+ *  @param x Degrees.
+ *
+ *  @return Radians.
+ *
+ */
+inline constexpr float to_radians(float x)
+{
+    return x * (pi / 180.0f);
+}
+
+/**
+ *
+ *  Swap two objects.
+ *
+ *  @param a Object a.
+ *  @param b Object b.
+ *
+ *
+ */
+template <class T>
+inline constexpr void swap(T &a, T &b) noexcept
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
+/**
+ *
  *  Compare two floats.
  *
  *  @param a A float.
@@ -31,7 +63,8 @@ inline constexpr auto pi = std::numbers::pi_v<float>;
  *  @return True if they're the same otherwise false.
  *
  */
-inline constexpr bool compare(float a, float b)
+inline constexpr bool
+compare(float a, float b)
 {
     constexpr auto epsilon = std::numeric_limits<float>::epsilon();
     return std::fabs(a - b) < epsilon;

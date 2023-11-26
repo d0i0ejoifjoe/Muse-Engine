@@ -146,7 +146,7 @@ void EventHandler::dispatch()
 
         for (const auto &callback : callbacks_)
         {
-            if (!callback(event)) // if function return false that means that user doesn't want to event propagate down the hierarchy
+            if (!callback(event)) // if function return false that means that user doesn't want event to proceed through the hierarchy, so we break
             {
                 break;
             }

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "utils/public/include_glm.h"
-#include "utils/public/utils.h"
+#include "utils/public/matrix4.h"
 
 namespace muse
 {
@@ -84,7 +83,7 @@ class Light
      *  @return Color vector.
      *
      */
-    glm::vec4 color() const;
+    Vector4 color() const;
 
     /**
      *
@@ -93,7 +92,7 @@ class Light
      *  @param color New color.
      *
      */
-    void set_color(const glm::vec4 &color);
+    void set_color(const Vector4 &color);
 
     /**
      *
@@ -102,7 +101,7 @@ class Light
      *  @return Projection matrix.
      *
      */
-    virtual glm::mat4 projection() const = 0;
+    virtual Matrix4 projection() const = 0;
 
     /**
      *
@@ -111,7 +110,7 @@ class Light
      *  @return View matrix.
      *
      */
-    virtual glm::mat4 view() const = 0;
+    virtual Matrix4 view() const = 0;
 
     /**
      *
@@ -138,7 +137,7 @@ class Light
      *  @param direction New direction.
      *
      */
-    virtual void set_direction(const glm::vec3 &direction) = 0;
+    virtual void set_direction(const Vector3 &direction) = 0;
 
     /**
      *
@@ -147,7 +146,7 @@ class Light
      *  @return Direction vector.
      *
      */
-    virtual glm::vec3 direction() const = 0;
+    virtual Vector3 direction() const = 0;
 
     /**
      *
@@ -156,7 +155,7 @@ class Light
      *  @return Position vector.
      *
      */
-    virtual glm::vec3 position() const = 0;
+    virtual Vector3 position() const = 0;
 
     /**
      *
@@ -165,7 +164,7 @@ class Light
      *  @param position New position.
      *
      */
-    virtual void set_position(const glm::vec3 &position) = 0;
+    virtual void set_position(const Vector3 &position) = 0;
 
     /**
      *
@@ -190,7 +189,7 @@ class Light
     float intensity_;
 
     /** Light color. */
-    glm::vec4 color_;
+    Vector4 color_;
 };
 
 }

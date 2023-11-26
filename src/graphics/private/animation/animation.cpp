@@ -1,17 +1,22 @@
-#include "graphics/public/animation.h"
+#include "graphics/public/animation/animation.h"
+
+#include "log/public/logger.h"
+#include "utils/public/utils.h"
 
 #include <cassert>
-
+#include <sys/time.h>
 namespace muse
 {
 
-Animation::Animation(std::string_view name, float duration, float ticks_per_second,
+Animation::Animation(std::string_view name,
+                     std::chrono::milliseconds duration,
                      const std::unordered_map<std::string, std::vector<Keyframe>> &frames)
     : name_(name)
-    , time_(0.0f)
+    , time_(duration)
     , duration_(duration)
-    , ticks_per_second_(ticks_per_second)
     , frames_(frames)
+    , playback_type_(PlaybackType::LOOP)
+    , last_(std::chrono::steady_clock::now())
 {
 }
 
@@ -20,37 +25,37 @@ std::string Animation::name() const
     return name_;
 }
 
-void Animation::advance(float delta_time)
+void Animation::advance()
 {
     if (running())
     {
-        // advance by ticks per second
-        time_ += ticks_per_second_ * delta_time;
+        const auto now = std::chrono::steady_clock::now();
+        const auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_);
+
+        // advance by delta
+        time_ += delta;
 
         if (playback_type_ == PlaybackType::LOOP)
         {
             // wrap back around if animation playback type is looping
-            time_ = std::fmod(time_, duration_);
+            time_ = time_ % duration_;
         }
+
+        last_ = now;
     }
 }
 
-float Animation::time() const
+std::chrono::milliseconds Animation::time() const
 {
     return time_;
 }
 
-float Animation::ticks_per_second() const
-{
-    return ticks_per_second_;
-}
-
-float Animation::duration() const
+std::chrono::milliseconds Animation::duration() const
 {
     return duration_;
 }
 
-void Animation::set_time(float time)
+void Animation::set_time(std::chrono::milliseconds time)
 {
     time_ = time;
 }
@@ -70,7 +75,7 @@ Transform Animation::transform(const std::string &name)
     auto end_frame = std::find_if(std::cbegin(keyframes) + 1, std::cend(keyframes),
                                   [&](const Keyframe &keyframe)
                                   {
-                                      return keyframe.time > time_;
+                                      return keyframe.time >= time_;
                                   });
 
     // If frame goes out of bounds walk back frame
@@ -79,25 +84,31 @@ Transform Animation::transform(const std::string &name)
         --end_frame;
     }
 
-    const auto start_frame = --end_frame;
+    // note we subtracting one not decrementiting because
+    // we want to get new iterator before end frame
+    const auto start_frame = end_frame - 1;
 
     const auto frames_diff = end_frame->time - start_frame->time;
-    const auto midway_length = time_ - end_frame->time;
+    const auto midway_length = time_ - start_frame->time;
 
-    const auto interpolation = midway_length / frames_diff;
+    const auto alpha = static_cast<float>(midway_length.count()) / static_cast<float>(frames_diff.count());
 
-    const auto transform = start_frame->transform.interpolate(end_frame->transform, interpolation);
+    const auto transform = start_frame->transform.interpolate(end_frame->transform, alpha);
+
     return transform;
 }
 
 bool Animation::running() const
 {
-    return playback_type_ == PlaybackType::LOOP ? true : time_ >= duration_;
+    return playback_type_ == PlaybackType::LOOP ? true : time_ < duration_;
 }
 
 void Animation::reset()
 {
-    time_ = 0.0f;
+    using namespace std::chrono_literals;
+
+    time_ = 0ms;
+    last_ = std::chrono::steady_clock::now();
 }
 
 void Animation::set_playback_type(PlaybackType playback_type)

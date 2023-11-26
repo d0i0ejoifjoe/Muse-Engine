@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,13 +18,13 @@ class TextureManager;
  */
 struct MaterialIndices
 {
-    std::uint32_t albedo;
-    std::uint32_t normal;
-    std::uint32_t metallic;
-    std::uint32_t roughness;
-    std::uint32_t ao;
-    std::uint32_t specular;
-    std::uint32_t height;
+    std::uint32_t albedo = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t normal = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t metallic = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t roughness = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t ao = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t specular = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t height = std::numeric_limits<std::uint32_t>::max();
 };
 
 /**
@@ -76,7 +77,7 @@ class MaterialManager
 
     /**
      *
-     *  Get counter.
+     *  Get material counter.
      *
      *  @return Material counter.
      *

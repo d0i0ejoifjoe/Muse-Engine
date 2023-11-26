@@ -1,7 +1,7 @@
 #pragma once
 
 #include "buffer.h"
-#include "skeleton.h"
+#include "graphics/public/animation/skeleton.h"
 #include "transform.h"
 #include "vertex.h"
 
@@ -98,7 +98,7 @@ class Mesh
      *
      *
      */
-    void set_translation(const glm::vec3 &translation);
+    void set_translation(const Vector3 &translation);
 
     /**
      *
@@ -107,7 +107,7 @@ class Mesh
      *  @param rotation Rotation.
      *
      */
-    void set_rotation(const glm::quat &rotation);
+    void set_rotation(const Quaternion &rotation);
 
     /**
      *
@@ -116,7 +116,7 @@ class Mesh
      *  @param scale Scale.
      *
      */
-    void set_scale(const glm::vec3 &scale);
+    void set_scale(const Vector3 &scale);
 
     /**
      *

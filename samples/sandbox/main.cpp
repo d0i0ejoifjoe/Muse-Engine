@@ -1,6 +1,6 @@
 #include "events/public/event_handler.h"
 #include "graphics/private/vertex_descriptor.h"
-#include "graphics/public/animation.h"
+#include "graphics/public/animation/animation.h"
 #include "graphics/public/camera.h"
 #include "graphics/public/material.h"
 #include "graphics/public/material_manager.h"
@@ -14,44 +14,56 @@
 
 #include <SDL.h>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <thread>
 
+/* Constants */
 static constexpr auto speed = 250.0f;
 static constexpr auto sensitivity = 0.1f;
 float delta = 0.0f;
 // FIXME: Make user not provide the width and height of monitor by theirself
 static constexpr auto width = 1920u;
 static constexpr auto height = 1080u;
-static muse::Camera camera{muse::CameraType::PERSPECTIVE, width, height, 1000.0f};
+
+static muse::Camera perspective_camera{muse::CameraType::INFINITE_PERSPECTIVE, width, height, 10000.0f};
+static muse::Camera ortho_camera{muse::CameraType::ORTHOGRAPHIC, 100, 100, 10000.0f};
+static muse::Camera *primary = nullptr;
 static bool playing = true;
 static std::unique_ptr<muse::Window> window;
 static std::unique_ptr<muse::ShaderSystem> sys;
+static std::unique_ptr<muse::EventHandler> e_handler;
 static std::unique_ptr<muse::TextureManager> tmanager;
 static std::unique_ptr<muse::MaterialManager> mmanager;
-static std::vector<muse::Mesh *> meshes{};
-static muse::Mesh *mesh = nullptr;
-static muse::Transform model_transform{};
+static std::vector<muse::Mesh *> meshes1{};
+static std::vector<muse::Mesh *> meshes2{};
+static muse::Texture *zombie_diffuse = nullptr;
+static muse::Texture *backpack_diffuse = nullptr;
 
 void render()
 {
-    glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    sys->set_value("proj", camera.projection());
-    sys->set_value("view", camera.view());
-    for (const auto &mesh : meshes)
+    sys->bind();
+    sys->set_value("proj", primary->projection());
+    sys->set_value("view", primary->view());
+    sys->set_value("tex", zombie_diffuse->bindless_handle());
+    for (const auto &mesh : meshes1)
     {
-        mesh->set_transform(model_transform);
         mesh->bind();
-        sys->set_value("model", mesh->transform().matrix());
-        sys->set_value("tex", mmanager->material(mesh->material_index())->albedo()->bindless_handle());
+        sys->set_value("model", mesh->transform().matrix() * muse::Matrix4::translate(muse::Vector3{0.0f, 0.0f, -10.0f}));
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
     }
-    mesh->set_transform(model_transform);
-    sys->set_value("model", mesh->transform().matrix());
-    mesh->bind();
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
+
+    sys->set_value("tex", backpack_diffuse->bindless_handle());
+    for (const auto &mesh : meshes2)
+    {
+        mesh->bind();
+        sys->set_value("model", mesh->transform().matrix());
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh->element_count()), GL_UNSIGNED_INT, nullptr);
+    }
+
     SDL_GL_SwapWindow(window->handle());
 }
 
@@ -65,37 +77,53 @@ bool handle_camera(const muse::Event &e)
 
         if (key[muse::Key::W] == muse::KeyState::DOWN)
         {
-            camera.translate(camera.direction() * speed_delta);
+            primary->translate(primary->direction() * speed_delta);
         }
 
         if (key[muse::Key::A] == muse::KeyState::DOWN)
         {
-            camera.translate(camera.right() * speed_delta);
+            primary->translate(primary->right() * speed_delta);
         }
 
         if (key[muse::Key::S] == muse::KeyState::DOWN)
         {
-            camera.translate(-camera.direction() * speed_delta);
+            primary->translate(-primary->direction() * speed_delta);
         }
 
         if (key[muse::Key::D] == muse::KeyState::DOWN)
         {
-            camera.translate(-camera.right() * speed_delta);
+            primary->translate(-primary->right() * speed_delta);
         }
 
-        if (key[muse::Key::LEFT_ARROW] == muse::KeyState::DOWN)
+        if (key[muse::Key::SPACE] == muse::KeyState::DOWN)
         {
-            model_transform.set_scale(model_transform.scale() + glm::vec3{0.0f, 0.0f, 0.5f});
+            primary->translate(primary->up() * speed_delta);
         }
 
-        if (key[muse::Key::RIGHT_ARROW] == muse::KeyState::DOWN)
+        if (key[muse::Key::LCTRL] == muse::KeyState::DOWN)
         {
-            model_transform.set_scale(model_transform.scale() + glm::vec3{0.0f, 0.0f, -0.5f});
+            primary->translate(-primary->up() * speed_delta);
         }
 
         if (key[muse::Key::ESCAPE] == muse::KeyState::DOWN)
         {
             playing = false;
+        }
+
+        if (key[muse::Key::Q] == muse::KeyState::DOWN)
+        {
+            static bool flip = false;
+
+            if (flip)
+            {
+                primary = std::addressof(perspective_camera);
+                flip = false;
+            }
+            else
+            {
+                primary = std::addressof(ortho_camera);
+                flip = true;
+            }
         }
     }
 
@@ -103,44 +131,21 @@ bool handle_camera(const muse::Event &e)
     {
         auto &mouse = e.get<muse::MouseEvent>();
 
-        camera.adjust_yaw(static_cast<float>(mouse.delta_x) * sensitivity);
-        camera.adjust_pitch(static_cast<float>(-mouse.delta_y) * sensitivity);
+        primary->adjust_yaw(static_cast<float>(mouse.delta_x) * sensitivity);
+        primary->adjust_pitch(static_cast<float>(-mouse.delta_y) * sensitivity);
 
-        camera.set_pitch(std::clamp(camera.pitch(), -89.0f, 89.0f));
+        primary->set_pitch(std::clamp(primary->pitch(), -89.0f, 89.0f));
     }
 
     return true;
 }
 
-bool handle_wheel(const muse::Event &e)
-{
-    if (e.type() == muse::EventType::WHEEL_SCROLL)
-    {
-        auto &wheel = e.get<muse::WheelScrollEvent>();
-
-        model_transform.set_translation(model_transform.translation() + glm::vec3{0.0f, 0.0f, wheel.delta_y});
-    }
-
-    return false;
-}
-
-void loaded_animations(std::vector<muse::Animation> &&animations,
-                       muse::Skeleton &&skeleton,
-                       std::map<std::string, std::uint32_t, std::less<>> &&map)
-{
-    LOG_INFO(BoneCount, "Count: {}", map.size());
-
-    for (const auto &animation : animations)
-    {
-        LOG_INFO(AnimationName, "Name: {}", animation.name());
-    }
-}
-
 int main()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
+
     window = std::make_unique<muse::Window>();
-    muse::EventHandler e_handler{};
+    e_handler = std::make_unique<muse::EventHandler>();
     tmanager = std::make_unique<muse::TextureManager>();
     mmanager = std::make_unique<muse::MaterialManager>(tmanager.get());
 
@@ -151,22 +156,11 @@ int main()
 
     muse::MeshManager manager{tmanager.get(), mmanager.get()};
 
-    std::vector<muse::Vertex> vertices{
-        {{-0.5f, -0.5f, -10.0f}, {}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {}, {}},
-        {{0.5f, -0.5f, -10.0f}, {}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {}, {}},
-        {{0.0f, 0.5f, -10.0f}, {}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.5f, 1.0f}, {}, {}},
-    };
+    primary = std::addressof(perspective_camera);
 
-    std::vector<std::uint32_t> indices{
-        0, 1, 2};
-
-    muse::Skeleton skeleton{};
-
-    glm::quat rotation{glm::vec3{0.0f, 0.0f, 0.0f}};
-    model_transform.set_rotation(rotation);
-
-    meshes = manager.load("/home/sviatoslav/Documents/OtherModels/WizardusMaximus.fbx", loaded_animations, false);
-    mesh = manager.create(vertices, indices, std::numeric_limits<std::uint32_t>::max());
+    meshes1 = manager.load("/home/sviatoslav/Documents/OtherModels/Zombie.fbx", nullptr, false, true);
+    meshes2 = manager.load("/home/sviatoslav/Documents/BackpackMapTest/backpack.obj", nullptr, false, false);
+    LOG_INFO(WE, "WE ARE HERE");
 
     std::string_view vertex_source = R"(
         #version 450 core
@@ -183,27 +177,24 @@ int main()
 
         out vec4 col; 
         out vec2 tex_coord;
-        flat out ivec4 bone_ids;
+        out flat ivec4 bone_ids;
         out vec4 weights;
+        out vec3 frag_pos;
+        out vec3 normal;
 
         uniform mat4 view;
         uniform mat4 proj;
         uniform mat4 model;
 
-        //uniform mat4 bones[100];
-
         void main()
         {
-            //mat4 bone = bones[aBoneIDs[0]] * aWeights[0];
-            //bone += bones[aBoneIDs[1]] * aWeights[1];
-            //bone += bones[aBoneIDs[2]] * aWeights[2];
-            //bone += bones[aBoneIDs[3]] * aWeights[3];
-
-            gl_Position = proj * view * model * vec4(aPos, 1.0); 
+            gl_Position = proj * view * model * vec4(aPos, 1.0f); 
+            frag_pos = vec3(model * vec4(aPos, 1.0f));
             tex_coord = aTexCoord;
             col = aColor;
             bone_ids = aBoneIDs;
             weights = aWeights;
+            normal = aNormal;
         }
     )";
 
@@ -215,6 +206,8 @@ int main()
 
         in vec4 col;
         in vec2 tex_coord;
+        in vec3 frag_pos;
+        in vec3 normal;
         uniform sampler2D tex;
 
         flat in ivec4 bone_ids;
@@ -260,17 +253,12 @@ int main()
             }
             else
             {
-                out_color = texture(tex, tex_coord);
+               out_color = texture(tex, tex_coord);
             }
         }
     )";
 
     sys = std::make_unique<muse::ShaderSystem>(vertex_source, fragment_source, std::nullopt);
-
-    LOG_INFO(RNG, "Integer: {}", muse::random_int<int>(1, 5));
-    LOG_INFO(RNG, "Float: {}", muse::random_float<float>(0.1f, 0.9f));
-    LOG_INFO(RNG, "Coin flip: {}", muse::flip_coin());
-
     sys->bind();
 
     sys->add_uniform("view");
@@ -278,8 +266,10 @@ int main()
     sys->add_uniform("model");
     sys->add_uniform("tex");
 
-    e_handler.add_callback(handle_camera);
-    e_handler.add_callback(handle_wheel);
+    zombie_diffuse = tmanager->load("/home/sviatoslav/Documents/OtherModels/ZombieTexture.png", nullptr, muse::TextureFormat::SRGB_ALPHA, false);
+    backpack_diffuse = tmanager->load("/home/sviatoslav/Documents/BackpackMapTest/diffuse.jpg", nullptr, muse::TextureFormat::SRGB_ALPHA, false);
+
+    e_handler->add_callback(handle_camera);
 
     auto last = SDL_GetTicks();
 
@@ -289,7 +279,7 @@ int main()
         delta = static_cast<float>(now - last) / 1000.0f;
         last = now;
 
-        e_handler.dispatch();
+        e_handler->dispatch();
 
         render();
     }

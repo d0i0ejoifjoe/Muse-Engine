@@ -1,6 +1,7 @@
 #pragma once
 
-#include "utils/public/include_glm.h"
+#include "utils/public/matrix4.h"
+#include "utils/public/vector3.h"
 
 namespace muse
 {
@@ -33,9 +34,9 @@ class Transform
      *  @param scale Scale.
      *
      */
-    Transform(const glm::vec3 &translation,
-              const glm::quat &rotation,
-              const glm::vec3 &scale);
+    Transform(const Vector3 &translation,
+              const Quaternion &rotation,
+              const Vector3 &scale);
 
     /**
      *
@@ -44,7 +45,7 @@ class Transform
      *  @param m Matrix.
      *
      */
-    explicit Transform(const glm::mat4 &m);
+    explicit Transform(const Matrix4 &m);
 
     /**
      *
@@ -65,7 +66,7 @@ class Transform
      *  @return Transform matrix.
      *
      */
-    glm::mat4 matrix() const;
+    Matrix4 matrix() const;
 
     /**
      *
@@ -74,7 +75,7 @@ class Transform
      *  @param m Transform matrix.
      *
      */
-    void set_matrix(const glm::mat4 &m);
+    void set_matrix(const Matrix4 &m);
 
     /**
      *
@@ -83,7 +84,7 @@ class Transform
      *  @return Translation.
      *
      */
-    glm::vec3 translation() const;
+    Vector3 translation() const;
 
     /**
      *
@@ -92,7 +93,7 @@ class Transform
      *  @return Rotation.
      *
      */
-    glm::quat rotation() const;
+    Quaternion rotation() const;
 
     /**
      *
@@ -101,7 +102,7 @@ class Transform
      *  @return Scale.
      *
      */
-    glm::vec3 scale() const;
+    Vector3 scale() const;
 
     /**
      *
@@ -110,7 +111,7 @@ class Transform
      *  @param scale Scale.
      *
      */
-    void set_scale(const glm::vec3 &scale);
+    void set_scale(const Vector3 &scale);
 
     /**
      *
@@ -119,7 +120,7 @@ class Transform
      *  @param rotation Rotation.
      *
      */
-    void set_rotation(const glm::quat &rotation);
+    void set_rotation(const Quaternion &rotation);
 
     /**
      *
@@ -128,17 +129,17 @@ class Transform
      *  @param translation Translation.
      *
      */
-    void set_translation(const glm::vec3 &translation);
+    void set_translation(const Vector3 &translation);
 
   private:
     /** Translation */
-    glm::vec3 translation_;
+    Vector3 translation_;
 
     /** Rotation */
-    glm::quat rotation_;
+    Quaternion rotation_;
 
     /** Scale */
-    glm::vec3 scale_;
+    Vector3 scale_;
 };
 
 }

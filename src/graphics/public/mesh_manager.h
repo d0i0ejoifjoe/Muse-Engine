@@ -54,6 +54,7 @@ class MeshManager
      */
     MUSE_NODISCARD std::vector<Mesh *> load(const std::string &filename,
                                             const AnimationCallback &animation_callback,
+                                            bool load_materials,
                                             bool flip_uvs);
 
     /**

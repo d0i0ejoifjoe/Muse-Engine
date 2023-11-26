@@ -1,12 +1,13 @@
 #pragma once
 
 #include "glad.h"
-#include "utils/public/include_glm.h"
+#include "utils/public/matrix4.h"
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace muse
 {
@@ -102,7 +103,17 @@ class ShaderSystem
      *  @param value New value for uniform.
      *
      */
-    void set_value(const std::string &uniform_name, const glm::mat4 &value);
+    void set_value(const std::string &uniform_name, const Matrix4 &value);
+
+    /**
+     *
+     *  Set uniform's value (array of matrix4x4).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, const std::vector<Matrix4> &value);
 
   private:
     /** Handle. */

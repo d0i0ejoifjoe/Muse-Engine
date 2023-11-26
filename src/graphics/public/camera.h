@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/public/include_glm.h"
+#include "utils/public/matrix4.h"
 
 #include <cstdint>
 
@@ -11,7 +11,8 @@ namespace muse
 enum class CameraType : std::uint8_t
 {
     ORTHOGRAPHIC,
-    PERSPECTIVE
+    PERSPECTIVE,
+    INFINITE_PERSPECTIVE
 };
 
 class Window;
@@ -101,7 +102,7 @@ class Camera
      *  @return Projection matrix.
      *
      */
-    glm::mat4 projection() const;
+    Matrix4 projection() const;
 
     /**
      *
@@ -110,7 +111,7 @@ class Camera
      *  @return View matrix.
      *
      */
-    glm::mat4 view() const;
+    Matrix4 view() const;
 
     /**
      *
@@ -119,7 +120,7 @@ class Camera
      *  @return Position.
      *
      */
-    glm::vec3 position() const;
+    Vector3 position() const;
 
     /**
      *
@@ -128,7 +129,7 @@ class Camera
      *  @param position New position.
      *
      */
-    void set_position(const glm::vec3 &position);
+    void set_position(const Vector3 &position);
 
     /**
      *
@@ -137,7 +138,7 @@ class Camera
      *  @param translation Amount of translation.
      *
      */
-    void translate(const glm::vec3 &translation);
+    void translate(const Vector3 &translation);
 
     /**
      *
@@ -146,7 +147,7 @@ class Camera
      *  @return Up vector.
      *
      */
-    glm::vec3 up() const;
+    Vector3 up() const;
 
     /**
      *
@@ -155,7 +156,7 @@ class Camera
      *  @return Right vector.
      *
      */
-    glm::vec3 right() const;
+    Vector3 right() const;
 
     /**
      *
@@ -186,12 +187,66 @@ class Camera
 
     /**
      *
+     *  Get camera's projection width.
+     *
+     *  @return Width.
+     *
+     */
+    float width() const;
+
+    /**
+     *
+     *  Get camera's projection height.
+     *
+     *  @return Height.
+     *
+     */
+    float height() const;
+
+    /**
+     *
+     *  Set camera's projection width.
+     *
+     *  @param width New width.
+     *
+     */
+    void set_width(float width);
+
+    /**
+     *
+     *  Set camera's projection height.
+     *
+     *  @param height New height.
+     *
+     */
+    void set_height(float height);
+
+    /**
+     *
      *  Get camera's direction.
      *
      *  @return Direction vector.
      *
      */
-    glm::vec3 direction() const;
+    Vector3 direction() const;
+
+    /**
+     *
+     *  Set camera's projection type.
+     *
+     *  @param type Camera type.
+     *
+     */
+    void set_type(CameraType type);
+
+    /**
+     *
+     *  Get camera's projection type.
+     *
+     *  @return Camera's type.
+     *
+     */
+    CameraType type() const;
 
   private:
     /**
@@ -234,19 +289,19 @@ class Camera
     float depth_;
 
     /** Projection matrix */
-    glm::mat4 projection_;
+    Matrix4 projection_;
 
     /** View matrix */
-    glm::mat4 view_;
+    Matrix4 view_;
 
     /** Positon of camera in world space */
-    glm::vec3 position_;
+    Vector3 position_;
 
     /** Direction of camera */
-    glm::vec3 direction_;
+    Vector3 direction_;
 
     /** Up vector */
-    glm::vec3 up_;
+    Vector3 up_;
 
     /** Type of projection matrix */
     CameraType type_;

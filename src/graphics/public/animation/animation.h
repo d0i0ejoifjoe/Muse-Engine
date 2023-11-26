@@ -2,6 +2,7 @@
 
 #include "keyframe.h"
 
+#include <chrono>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -30,22 +31,20 @@ class Animation
      *
      *  @param name Name of animation.
      *  @param duration Duration of animation.
-     *  @param ticks_per_second Ticks per second.
      *  @param frames Map that maps every bone to it's series of keyframes.
      *
      */
     Animation(std::string_view name,
-              float duration,
-              float ticks_per_second,
+              std::chrono::milliseconds duration,
               const std::unordered_map<std::string, std::vector<Keyframe>> &frames);
 
     /**
-     * 
+     *
      *  Get name of animation.
-     * 
+     *
      *  @return Name string.
-     * 
-    */
+     *
+     */
     std::string name() const;
 
     /**
@@ -55,7 +54,7 @@ class Animation
      *  @param delta_time Delta.
      *
      */
-    void advance(float delta_time);
+    void advance();
 
     /**
      *
@@ -64,16 +63,7 @@ class Animation
      *  @return Time.
      *
      */
-    float time() const;
-
-    /**
-     *
-     *  Get ticks per second.
-     *
-     *  @return Ticks per second.
-     *
-     */
-    float ticks_per_second() const;
+    std::chrono::milliseconds time() const;
 
     /**
      *
@@ -82,7 +72,7 @@ class Animation
      *  @return Duration.
      *
      */
-    float duration() const;
+    std::chrono::milliseconds duration() const;
 
     /**
      *
@@ -91,7 +81,7 @@ class Animation
      *  @param time New time.
      *
      */
-    void set_time(float time);
+    void set_time(std::chrono::milliseconds time);
 
     /**
      *
@@ -154,19 +144,19 @@ class Animation
     std::string name_;
 
     /** Current time. */
-    float time_;
+    std::chrono::milliseconds time_;
 
     /** Duration of animation. */
-    float duration_;
-
-    /** Ticks per second. */
-    float ticks_per_second_;
+    std::chrono::milliseconds duration_;
 
     /** Frame map. */
     std::unordered_map<std::string, std::vector<Keyframe>> frames_;
 
     /** Animation's playback. */
     PlaybackType playback_type_;
+
+    /** Last. */
+    std::chrono::steady_clock::time_point last_;
 };
 
 }

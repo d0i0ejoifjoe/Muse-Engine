@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 
 /** Maximum buffer size. */
 static constexpr auto max_buf_size = 32000u;
@@ -180,13 +181,19 @@ void ShaderSystem::set_value(const std::string &uniform_name, std::uint32_t valu
     glProgramUniform1ui(handle_, uniform_map_[uniform_name], value);
 }
 
-void ShaderSystem::set_value(const std::string &uniform_name, const glm::mat4 &value)
+void ShaderSystem::set_value(const std::string &uniform_name, const Matrix4 &value)
 {
-    glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], 1, GL_FALSE, &value[0][0]);
+    glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], 1, GL_TRUE, value.data());
 }
 
 void ShaderSystem::set_value(const std::string &uniform_name, std::uint64_t value)
 {
     glProgramUniformHandleui64ARB(handle_, uniform_map_[uniform_name], value);
 }
+
+void ShaderSystem::set_value(const std::string &uniform_name, const std::vector<Matrix4> &value)
+{
+    glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], static_cast<GLsizei>(value.size()), GL_TRUE, reinterpret_cast<const float *>(value.data()));
+}
+
 }

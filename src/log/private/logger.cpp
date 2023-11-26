@@ -2,6 +2,7 @@
 
 #include <fmt/color.h>
 #include <fstream>
+#include <iostream>
 
 namespace muse
 {
@@ -31,28 +32,49 @@ void Logger::log(LogLevel level,
 
     if (!log_file.empty())
     {
-        std::ofstream file{log_file, std::ios::app};
+        // we don't want to open new file everytime
+        // because it is expensive, instead we can
+        // record last opened file path
+        // and compare it with current file path
+        // if they match we won't open new file
+        // like this we won't open new files
+        // until the new path will be given
+        static std::ofstream file{log_file, std::ios::app};
+        static std::string previous_path = log_file;
+        if (previous_path != log_file)
+        {
+            file = std::move(std::ofstream(log_file, std::ios::app));
+        }
+
         file << format_str;
     }
     else
     {
-        fmt::color color = fmt::color::white;
+        std::string color{"\x1B[0;0m"};
+        bool is_err = false;
 
         switch (level)
         {
             case LogLevel::INFO:
-                color = fmt::color::white;
+                color = "\x1B[0;37m";
                 break;
             case LogLevel::WARN:
-                color = fmt::color::yellow;
+                color = "\x1B[0;33m";
                 break;
             case LogLevel::ERR:
-                color = fmt::color::red;
+                color = "\x1B[0;31m";
+                is_err = true;
                 break;
         }
 
-        fmt::print(fmt::fg(color), format_str);
+        if (!is_err)
+        {
+            std::cout << color << format_str << "\x1B[0;0m";
+        }
+        else
+        {
+            std::cerr << color << format_str << "\x1B[0;0m";
+        }
     }
 }
-
 }

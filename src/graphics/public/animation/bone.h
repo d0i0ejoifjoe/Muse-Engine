@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/public/include_glm.h"
+#include "utils/public/matrix4.h"
 
 #include <cstdint>
 #include <string>
@@ -32,19 +32,19 @@ struct Bone
      *  @param offset Offset matrix.
      *  @param transform Transform matrix.
      *  @param index Index of bone.
-     *  @param children All of it's children.
+     *  @param parent Name of parent of this bone.
      *
      */
     Bone(std::string_view name,
-         const glm::mat4 &offset,
-         const glm::mat4 &transform,
+         const Matrix4 &offset,
+         const Matrix4 &transform,
          std::int32_t index,
-         const std::vector<Bone> &children)
+         std::string_view parent)
         : name(name)
         , offset(offset)
         , transform(transform)
         , index(index)
-        , children(children)
+        , parent(parent)
     {
     }
 
@@ -52,16 +52,15 @@ struct Bone
     std::string name;
 
     /** Offset matrix. */
-    glm::mat4 offset;
+    Matrix4 offset;
 
     /** Transform matrix. */
-    glm::mat4 transform;
+    Matrix4 transform;
 
     /** Index of bone. */
     std::int32_t index;
 
     /** Children of this bone. */
-    std::vector<Bone> children;
+    std::string parent;
 };
-
 }

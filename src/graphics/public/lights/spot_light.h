@@ -31,7 +31,7 @@ class SpotLight : public Light
      *  @return Projection matrix.
      *
      */
-    glm::mat4 projection() const override;
+    Matrix4 projection() const override;
 
     /**
      *
@@ -40,7 +40,7 @@ class SpotLight : public Light
      *  @return View matrix.
      *
      */
-    glm::mat4 view() const override;
+    Matrix4 view() const override;
 
     /**
      *
@@ -67,7 +67,7 @@ class SpotLight : public Light
      *  @param direction New direction.
      *
      */
-    void set_direction(const glm::vec3 &direction) override;
+    void set_direction(const Vector3 &direction) override;
 
     /**
      *
@@ -76,7 +76,7 @@ class SpotLight : public Light
      *  @return Position vector.
      *
      */
-    glm::vec3 position() const override;
+    Vector3 position() const override;
 
     /**
      *
@@ -85,7 +85,7 @@ class SpotLight : public Light
      *  @param position New position.
      *
      */
-    void set_position(const glm::vec3 &position) override;
+    void set_position(const Vector3 &position) override;
 
     /**
      *
@@ -107,16 +107,16 @@ class SpotLight : public Light
 
   private:
     /** Position. */
-    glm::vec3 position_;
+    Vector3 position_;
 
     /** Direction. */
-    glm::vec3 direction_;
+    Vector3 direction_;
 
     /** Projection matrix. */
-    glm::mat4 projection_;
+    Matrix4 projection_;
 
     /** View matrix. */
-    glm::mat4 view_;
+    Matrix4 view_;
 
     /** Whether light casts shadows. */
     bool casts_shadows_;

@@ -29,29 +29,37 @@ Camera::Camera(CameraType type, std::uint32_t width, std::uint32_t height, float
 
 void Camera::recreate_direction()
 {
-    direction_.x = std::cos(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
-    direction_.y = std::sin(glm::radians(pitch_));
-    direction_.z = std::sin(glm::radians(yaw_)) * std::cos(glm::radians(pitch_));
+    const auto yaw_rads = to_radians(yaw_);
+    const auto pitch_rads = to_radians(pitch_);
 
-    direction_ = glm::normalize(direction_);
+    direction_.x = std::cos(yaw_rads) * std::cos(pitch_rads);
+    direction_.y = std::sin(pitch_rads);
+    direction_.z = std::sin(yaw_rads) * std::cos(pitch_rads);
+
+    direction_ = Vector3::normalize(direction_);
 }
 
 void Camera::recreate_proj()
 {
     if (type_ == CameraType::ORTHOGRAPHIC)
     {
-        projection_ = glm::ortho(-width_, width_, -height_, height_, -depth_, depth_);
+        projection_ = Matrix4::orthographic_projection(width_, height_, depth_);
     }
     else if (type_ == CameraType::PERSPECTIVE)
     {
-        projection_ = glm::perspective(glm::radians(fov_), width_ / height_, 0.1f, depth_);
+        projection_ = Matrix4::perspective_projection(fov_, width_, height_, 0.1f, depth_);
+    }
+    else if (type_ == CameraType::INFINITE_PERSPECTIVE)
+    {
+        // Depth is ignored
+        projection_ = Matrix4::infinite_perspective_projection(fov_, width_, height_, 0.1f);
     }
 }
 
 void Camera::recreate_view()
 {
     recreate_direction();
-    view_ = glm::lookAtRH(position_, position_ + direction_, up_);
+    view_ = Matrix4::look_at(position_, position_ + direction_, up_);
 }
 
 float Camera::yaw() const
@@ -88,41 +96,41 @@ void Camera::adjust_pitch(float pitch)
     recreate_view();
 }
 
-glm::mat4 Camera::projection() const
+Matrix4 Camera::projection() const
 {
     return projection_;
 }
 
-glm::mat4 Camera::view() const
+Matrix4 Camera::view() const
 {
     return view_;
 }
 
-glm::vec3 Camera::position() const
+Vector3 Camera::position() const
 {
     return position_;
 }
 
-void Camera::set_position(const glm::vec3 &position)
+void Camera::set_position(const Vector3 &position)
 {
     position_ = position;
     recreate_view();
 }
 
-void Camera::translate(const glm::vec3 &translation)
+void Camera::translate(const Vector3 &translation)
 {
     position_ += translation;
     recreate_view();
 }
 
-glm::vec3 Camera::up() const
+Vector3 Camera::up() const
 {
     return up_;
 }
 
-glm::vec3 Camera::right() const
+Vector3 Camera::right() const
 {
-    return glm::normalize(glm::cross(up_, direction_));
+    return Vector3::normalize(Vector3::cross(up_, direction_));
 }
 
 float Camera::fov() const
@@ -142,9 +150,42 @@ void Camera::adjust_fov(float fov)
     recreate_proj();
 }
 
-glm::vec3 Camera::direction() const
+Vector3 Camera::direction() const
 {
     return direction_;
+}
+
+float Camera::width() const
+{
+    return width_;
+}
+
+float Camera::height() const
+{
+    return height_;
+}
+
+void Camera::set_width(float width)
+{
+    width_ = width;
+    recreate_proj();
+}
+
+void Camera::set_height(float height)
+{
+    height_ = height;
+    recreate_proj();
+}
+
+CameraType Camera::type() const
+{
+    return type_;
+}
+
+void Camera::set_type(CameraType type)
+{
+    type_ = type;
+    recreate_proj();
 }
 
 }

@@ -27,30 +27,43 @@ class Skeleton
      *
      *  Create a skeleton that has no animation responsible for it.
      *
-     *  @param root_bone Root bone that contains all other bones as their children.
+     *  @param bones Bones that are ordered in certain way.
+     *  @param parents Parent indices.
      *
      */
-    explicit Skeleton(const Bone &root_bone);
+    explicit Skeleton(const std::vector<Bone> &bones,
+                      const std::vector<std::size_t> &parents);
 
     /**
      *
      *  Create a skeleton.
      *
-     *  @param root_bone Root bone that contains all other bones as their children.
+     *  @param bones Bones that are ordered in certain way.
+     *  @param parents Parent indices.
      *  @param animation Animation that's responsible for the skeleton.
      *
      */
-    Skeleton(const Bone &root_bone,
+    Skeleton(const std::vector<Bone> &bones,
+             const std::vector<std::size_t> &parents,
              Animation *animation);
 
     /**
      *
-     *  Get root bone.
+     *  Get const reference to bones
      *
-     *  @return Root bone pointer.
+     *  @return Bones.
      *
      */
-    const Bone *root_bone() const;
+    const std::vector<Bone> &bones() const;
+
+    /**
+     * 
+     *  Get parents indices.
+     * 
+     *  @return Parents.
+     * 
+    */
+    const std::vector<std::size_t> &parents() const;
 
     /**
      *
@@ -59,7 +72,7 @@ class Skeleton
      *  @return Transforms.
      *
      */
-    const std::vector<glm::mat4> &transforms() const;
+    const std::vector<Matrix4> &transforms() const;
 
     /**
      *
@@ -98,11 +111,14 @@ class Skeleton
     void set_animation(Animation *animation);
 
   private:
-    /** Root bone. */
-    Bone root_bone_;
+    /** Bones. */
+    std::vector<Bone> bones_;
+
+    /** Parents. */
+    std::vector<std::size_t> parents_;
 
     /** Transformations. */
-    std::vector<glm::mat4> transforms_;
+    std::vector<Matrix4> transforms_;
 
     /** Animation that's responsible for skeleton. */
     Animation *animation_;

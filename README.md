@@ -3,6 +3,11 @@
 Just another engine with C++
 but for Linux, planning to add support for more platforms later.
 
+TODO: Start making pbr shader and renderer
+
+Materials:
 FIXME: Make flipping images without corrupting them
-FIXME: Add warnings if there is no certain map in a material
-FIXME: Fix weight loading 
+
+Animations (later):
+FIXME: Fix the matrices transforms for animation
+FIXME: Fix if there no any missing bones when loading the model

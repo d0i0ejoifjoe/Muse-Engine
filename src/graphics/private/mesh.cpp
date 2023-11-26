@@ -1,8 +1,8 @@
 #include "graphics/public/mesh.h"
 
 #include "graphics/private/vertex_descriptor.h"
+#include "graphics/public/animation/skeleton.h"
 #include "graphics/public/material.h"
-#include "graphics/public/skeleton.h"
 #include "log/public/logger.h"
 
 std::pair<GLenum, GLboolean> to_opengl(muse::VertexElementType type)
@@ -102,17 +102,17 @@ void Mesh::set_transform(const Transform &transform)
     transform_ = transform;
 }
 
-void Mesh::set_translation(const glm::vec3 &translation)
+void Mesh::set_translation(const Vector3 &translation)
 {
     transform_.set_translation(translation);
 }
 
-void Mesh::set_rotation(const glm::quat &rotation)
+void Mesh::set_rotation(const Quaternion &rotation)
 {
     transform_.set_rotation(rotation);
 }
 
-void Mesh::set_scale(const glm::vec3 &scale)
+void Mesh::set_scale(const Vector3 &scale)
 {
     transform_.set_scale(scale);
 }
