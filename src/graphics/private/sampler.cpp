@@ -36,7 +36,8 @@ Sampler::Sampler(const SamplerSpecification &spec)
     glSamplerParameteri(handle_, GL_TEXTURE_WRAP_S, to_opengl(specification_.s_mode));
     glSamplerParameteri(handle_, GL_TEXTURE_WRAP_T, to_opengl(specification_.t_mode));
     glSamplerParameteri(handle_, GL_TEXTURE_WRAP_R, to_opengl(specification_.r_mode));
-    glSamplerParameterfv(handle_, GL_TEXTURE_BORDER_COLOR, &specification_.border_color[0]);
+    glSamplerParameterfv(handle_, GL_TEXTURE_BORDER_COLOR, &specification_.border_color.x);
+
     glSamplerParameteri(handle_, GL_TEXTURE_MAG_FILTER, to_opengl(specification_.mag_filter));
 
     if (specification_.use_mipmaps)
@@ -65,6 +66,8 @@ Sampler::Sampler(const SamplerSpecification &spec)
     {
         glSamplerParameteri(handle_, GL_TEXTURE_MIN_FILTER, to_opengl(specification_.min_filter));
     }
+
+    LOG_INFO(Sampler, "Sampler created!");
 }
 
 Sampler::~Sampler()

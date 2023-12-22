@@ -2,9 +2,7 @@
 
 #include "glad.h"
 #include "graphics/public/texture_format.h"
-
-#include <cstddef>
-#include <cstdint>
+#include "utils/public/utils.h"
 
 namespace muse
 {
@@ -24,6 +22,23 @@ class CubeMap
   public:
     /**
      *
+     *  Create cubemap for rendering.
+     *
+     *  @param width Width of all sides.
+     *  @param height Height of all sides.
+     *  @param format Format of all sides.
+     *  @param sampler Sampler to sample cubemap with.
+     *  @param index Index of cubemap.
+     *
+     */
+    CubeMap(std::uint32_t width,
+            std::uint32_t height,
+            TextureFormat format,
+            Sampler *sampler,
+            std::int32_t index);
+
+    /**
+     *
      *  Create cubemap.
      *
      *  @param left_data Data of left side.
@@ -36,21 +51,19 @@ class CubeMap
      *  @param height Height of all sides.
      *  @param format Format of all sides.
      *  @param sampler Sampler to sample cubemap with.
-     *  @param color_channels How much color channels has loaded image data.
      *  @param index Index of cubemap.
      *
      */
-    CubeMap(std::byte *left_data,
-            std::byte *right_data,
-            std::byte *up_data,
-            std::byte *down_data,
-            std::byte *front_data,
-            std::byte *back_data,
+    CubeMap(const Data &left_data,
+            const Data &right_data,
+            const Data &up_data,
+            const Data &down_data,
+            const Data &front_data,
+            const Data &back_data,
             std::uint32_t width,
             std::uint32_t height,
             TextureFormat format,
             Sampler *sampler,
-            std::uint32_t color_channels,
             std::int32_t index);
 
     /**
@@ -105,6 +118,15 @@ class CubeMap
      */
     std::int32_t index() const;
 
+    /**
+     *
+     *  Get texture format of cubemap.
+     *
+     *  @return Texture format.
+     *
+     */
+    TextureFormat format() const;
+
   private:
     /** Width */
     std::uint32_t width_;
@@ -117,6 +139,9 @@ class CubeMap
 
     /** Bindless handle */
     GLuint64 bindless_handle_;
+
+    /** Texture format. */
+    TextureFormat format_;
 
     /** Index */
     std::int32_t index_;

@@ -1,5 +1,7 @@
 #include "graphics/public/material.h"
 
+#include "log/public/logger.h"
+
 namespace muse
 {
 
@@ -27,16 +29,6 @@ Texture *Material::roughness() const
 Texture *Material::metallic() const
 {
     return maps_.metallic;
-}
-
-Texture *Material::specular() const
-{
-    return maps_.specular;
-}
-
-Texture *Material::height() const
-{
-    return maps_.height;
 }
 
 Texture *Material::ao() const

@@ -2,9 +2,7 @@
 
 #include "glad.h"
 #include "graphics/public/texture_format.h"
-
-#include <cstddef>
-#include <cstdint>
+#include "utils/public/utils.h"
 
 namespace muse
 {
@@ -24,23 +22,38 @@ class Texture
   public:
     /**
      *
-     *  Create texture.
+     *  Create texture for rendering.
      *
-     *  @param width Width of image.
-     *  @param height Height of image.
-     *  @param format Format of image.
-     *  @param data Data of image.
-     *  @param sampler Sampler to sample texture with.
-     *  @param color_channels How much color channels has loaded image data.
+     *  @param width Width of render target.
+     *  @param height Height of render target.
+     *  @param format Format of render target.
+     *  @param sampler Sampler for render target.
      *  @param index Index of texture.
      *
      */
     Texture(std::uint32_t width,
             std::uint32_t height,
             TextureFormat format,
-            std::byte *data,
             Sampler *sampler,
-            std::uint32_t color_channels,
+            std::int32_t index);
+
+    /**
+     *
+     *  Create texture.
+     *
+     *  @param data Data of image.
+     *  @param width Width of image.
+     *  @param height Height of image.
+     *  @param format Format of image.
+     *  @param sampler Sampler to sample texture with.
+     *  @param index Index of texture.
+     *
+     */
+    Texture(const Data &data,
+            std::uint32_t width,
+            std::uint32_t height,
+            TextureFormat format,
+            Sampler *sampler,
             std::int32_t index);
 
     /**

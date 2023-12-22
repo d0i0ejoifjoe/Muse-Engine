@@ -440,16 +440,16 @@ muse::Sampler *create_sampler(muse::TextureManager *tmanager,
     return tmanager->add(spec);
 }
 
-std::uint32_t process_texture(const aiMaterial *mat,
-                              const aiScene *scene,
-                              aiTextureType type,
-                              muse::TextureManager *tmanager,
-                              const std::string &dir)
+muse::Texture *process_texture(const aiMaterial *mat,
+                               const aiScene *scene,
+                               aiTextureType type,
+                               muse::TextureManager *tmanager,
+                               const std::string &dir)
 {
     aiString path{};
 
     // Diffuse is only texture that we can gamma correct
-    auto format = type == aiTextureType_DIFFUSE ? muse::TextureFormat::SRGB_ALPHA : muse::TextureFormat::RGBA;
+    auto format = type == aiTextureType_DIFFUSE ? muse::TextureFormat::SRGBA : muse::TextureFormat::RGBA;
 
     if (mat->GetTextureCount(type) != 0 && mat->GetTexture(type, 0, &path, nullptr, nullptr, nullptr, nullptr, nullptr) == aiReturn_SUCCESS)
     {
@@ -462,37 +462,39 @@ std::uint32_t process_texture(const aiMaterial *mat,
             auto w = 0;
             auto h = 0;
             auto color_channels = 0;
-            std::byte *data = nullptr;
+            std::byte *data_ptr = nullptr;
 
             // if height is 0 we need to decode image data, we will use stb_image for this
             if (!tex->mHeight)
             {
-                data = reinterpret_cast<std::byte *>(stbi_load_from_memory(reinterpret_cast<stbi_uc *>(tex->pcData),
-                                                                           tex->mWidth,
-                                                                           &w,
-                                                                           &h,
-                                                                           &color_channels,
-                                                                           4));
+                data_ptr = reinterpret_cast<std::byte *>(stbi_load_from_memory(reinterpret_cast<stbi_uc *>(tex->pcData),
+                                                                               tex->mWidth,
+                                                                               &w,
+                                                                               &h,
+                                                                               &color_channels,
+                                                                               4));
             }
             else // else we just proceed
             {
                 w = tex->mWidth;
                 h = tex->mHeight;
                 color_channels = tex->CheckFormat("jpg") ? 3 : 4;
-                data = reinterpret_cast<std::byte *>(tex->pcData);
+                data_ptr = reinterpret_cast<std::byte *>(tex->pcData);
             }
 
+            muse::Data data{data_ptr, data_ptr + w * h * color_channels};
+
             // we want all textures/images registered in texture manager
-            return tmanager->add(data, w, h, sampler, color_channels, format)->index();
+            return tmanager->add_texture(data, w, h, sampler, format);
         }
         else
         {
             // we want all textures/images registered in texture manager
-            return tmanager->load(dir + std::string(path.data), sampler, format, false)->index();
+            return tmanager->load_texture(dir + std::string(path.data), sampler, format == muse::TextureFormat::SRGBA, false);
         }
     }
 
-    return std::numeric_limits<std::uint32_t>::max();
+    return nullptr;
 }
 
 std::uint32_t process_material(const aiMaterial *mat,
@@ -502,10 +504,14 @@ std::uint32_t process_material(const aiMaterial *mat,
                                const std::string &dir)
 {
     // Process all textures
-    muse::MaterialIndices indices{};
-    indices.albedo = process_texture(mat, scene, aiTextureType_DIFFUSE, tmanager, dir);
+    muse::MaterialMaps maps{};
+    maps.albedo = process_texture(mat, scene, aiTextureType_BASE_COLOR, tmanager, dir);
+    maps.ao = process_texture(mat, scene, aiTextureType_AMBIENT_OCCLUSION, tmanager, dir);
+    maps.metallic = process_texture(mat, scene, aiTextureType_METALNESS, tmanager, dir);
+    maps.roughness = process_texture(mat, scene, aiTextureType_DIFFUSE_ROUGHNESS, tmanager, dir);
+    maps.normal = process_texture(mat, scene, aiTextureType_NORMAL_CAMERA, tmanager, dir);
 
-    mmanager->add(indices, mat->GetName().data);
+    mmanager->add(maps, mat->GetName().data);
 
     return mmanager->counter();
 }
@@ -621,11 +627,13 @@ std::vector<muse::Mesh *> process_meshes(muse::MeshManager *manager,
 namespace muse
 {
 
-MeshManager::MeshManager(TextureManager *tmanager, MaterialManager *mmanager)
+MeshManager::MeshManager(FileManager *fmanager, TextureManager *tmanager, MaterialManager *mmanager)
     : meshes_()
     , tmanager_(tmanager)
     , mmanager_(mmanager)
+    , fmanager_(fmanager)
 {
+    LOG_INFO(MeshManager, "Mesh manager created!");
 }
 
 std::vector<Mesh *> MeshManager::load(const std::string &filename,
@@ -636,9 +644,13 @@ std::vector<Mesh *> MeshManager::load(const std::string &filename,
     auto flags = flip_uvs ? aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData | aiProcess_LimitBoneWeights | aiProcess_FlipUVs
                           : aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_PopulateArmatureData | aiProcess_LimitBoneWeights;
 
-    Assimp::Importer importer{};
+    static std::int32_t model_index = -1;
+    model_index++;
 
-    const auto *scene = importer.ReadFile(filename, flags);
+    const auto &model_data = fmanager_->load(filename, "model_" + std::to_string(model_index));
+
+    Assimp::Importer importer{};
+    const auto *scene = importer.ReadFileFromMemory(model_data.data(), model_data.size(), flags);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {

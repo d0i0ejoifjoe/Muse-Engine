@@ -190,9 +190,8 @@ Window::Window()
     auto success = gladLoadGLLoader(SDL_GL_GetProcAddress);
     assert(success != 0 && "failed to load opengl functions");
 
-    // Enable multisampling and gamma correction
+    // Enable multisampling
     glEnable(GL_MULTISAMPLE);
-    glEnable(GL_FRAMEBUFFER_SRGB);
 
     // Get context flags.
     GLint context_flags = GL_NONE;
@@ -207,6 +206,8 @@ Window::Window()
         glDebugMessageCallback(gl_debug_output, nullptr);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
     }
+
+    LOG_INFO(Window, "Window created!");
 }
 
 Window::~Window()

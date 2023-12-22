@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad.h"
+#include "utils/public/file_manager.h"
 #include "utils/public/matrix4.h"
 
 #include <cstdint>
@@ -30,9 +31,9 @@ class ShaderSystem
      *  @param geometry_shader_source Getometry shader source (optional).
      *
      */
-    ShaderSystem(std::string_view vertex_shader_source,
-                 std::string_view fragment_shader_source,
-                 std::optional<std::string_view> geometry_shader_source);
+    ShaderSystem(const std::string &vertex_shader_source,
+                 const std::string &fragment_shader_source,
+                 std::optional<std::string> geometry_shader_source = std::nullopt);
 
     /**
      *
@@ -107,6 +108,26 @@ class ShaderSystem
 
     /**
      *
+     *  Set uniform's value (vector3).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, const Vector3 &value);
+
+    /**
+     *
+     *  Set uniform's value (bool).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, bool value);
+
+    /**
+     *
      *  Set uniform's value (array of matrix4x4).
      *
      *  @param uniform_name Name of uniform to set.
@@ -114,6 +135,16 @@ class ShaderSystem
      *
      */
     void set_value(const std::string &uniform_name, const std::vector<Matrix4> &value);
+
+    /**
+     *
+     *  Set uniform's value (float).
+     *
+     *  @param uniform_name Name of uniform to set.
+     *  @param value New value for uniform.
+     *
+     */
+    void set_value(const std::string &uniform_name, float value);
 
   private:
     /** Handle. */

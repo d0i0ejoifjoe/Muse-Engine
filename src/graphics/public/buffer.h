@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glad.h"
+#include "log/public/logger.h"
 
 #include <cstddef>
 #include <vector>
@@ -156,6 +157,12 @@ class Buffer
     {
         if (offset_ + size > size_)
         {
+            if constexpr (Target == GL_UNIFORM_BUFFER || Target == GL_SHADER_STORAGE_BUFFER)
+            {
+                LOG_WARN(Buffer, "Buffer write will overflow");
+                return;
+            }
+
             resize(std::max(size_ * 2, offset_ + size));
         }
 

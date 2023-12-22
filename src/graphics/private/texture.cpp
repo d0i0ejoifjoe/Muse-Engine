@@ -7,46 +7,93 @@
 
 /**
  *
- *  Convert color channels to opengl data format.
+ *  Get internal format opengl enum.
  *
- *  @param color_channels How much color channels has every texel in data buffer.
- *  @param gamma_correction Does image have gamma correction.
- *  @param is_depth Whether image contains depth data.
+ *  @param engine_format Engine format.
  *
- *  @return Tuple with [internal format, format, type].
+ *  @return GL format.
  *
  */
-inline std::tuple<GLenum, GLenum, GLenum> to_opengl(std::uint32_t color_channels, bool gamma_correction, bool is_depth)
+GLenum to_opengl(muse::TextureFormat engine_format)
 {
     GLenum format = GL_NONE;
-    GLenum internal_format = GL_NONE;
 
-    if (is_depth)
+    switch (engine_format)
     {
-        return {GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT};
+        case muse::TextureFormat::RED: format = GL_RED; break;
+        case muse::TextureFormat::RG: format = GL_RG; break;
+        case muse::TextureFormat::RGB: format = GL_RGB; break;
+        case muse::TextureFormat::RGBA: format = GL_RGBA; break;
+        case muse::TextureFormat::SRGB: format = GL_SRGB; break;
+        case muse::TextureFormat::SRGBA: format = GL_SRGB_ALPHA; break;
+        case muse::TextureFormat::REDF16: format = GL_R16F; break;
+        case muse::TextureFormat::RGF16: format = GL_RG16F; break;
+        case muse::TextureFormat::RGBF16: format = GL_RGB16F; break;
+        case muse::TextureFormat::RGBAF16: format = GL_RGBA16F; break;
+        case muse::TextureFormat::DEPTH_COMPONENT: format = GL_DEPTH_COMPONENT; break;
     }
 
-    switch (color_channels)
+    return format;
+}
+
+/**
+ *
+ *  Get the texture format based on internal format.
+ *
+ *  @param internal_format Internal format.
+ *
+ *  @return GL format.
+ *
+ */
+inline GLenum texture_format(GLenum internal_format)
+{
+    GLenum format = GL_NONE;
+
+    switch (internal_format)
     {
-        case 1:
-            internal_format = GL_RED;
-            format = GL_RED;
-            break;
-        case 2:
-            internal_format = GL_RG;
-            format = GL_RG;
-            break;
-        case 3:
-            internal_format = gamma_correction ? GL_SRGB : GL_RGB;
-            format = GL_RGB;
-            break;
-        case 4:
-            internal_format = gamma_correction ? GL_SRGB_ALPHA : GL_RGBA;
-            format = GL_RGBA;
-            break;
+        case GL_RED:
+        case GL_RG:
+        case GL_RGB:
+        case GL_RGBA: return internal_format;
+        case GL_SRGB: format = GL_RGB; break;
+        case GL_SRGB_ALPHA: format = GL_RGBA; break;
+        case GL_R16F: format = GL_RED; break;
+        case GL_RG16F: format = GL_RG; break;
+        case GL_RGB16F: format = GL_RGB; break;
+        case GL_RGBA16F: format = GL_RGBA; break;
+        case GL_DEPTH_COMPONENT: format = GL_DEPTH_COMPONENT; break;
     }
 
-    return {internal_format, format, GL_UNSIGNED_BYTE};
+    return format;
+}
+
+/**
+ *
+ *  Get texture data type.
+ *
+ *  @param internal_format Internal format.
+ *
+ *  @return GLEnum for data type.
+ *
+ */
+GLenum to_opengl(GLenum internal_format)
+{
+    switch (internal_format)
+    {
+        case GL_RED:
+        case GL_RG:
+        case GL_RGB:
+        case GL_RGBA:
+        case GL_SRGB:
+        case GL_SRGB_ALPHA: return GL_UNSIGNED_BYTE;
+        case GL_R16F:
+        case GL_RG16F:
+        case GL_RGB16F:
+        case GL_RGBA16F:
+        case GL_DEPTH_COMPONENT: return GL_FLOAT;
+    }
+
+    return GL_NONE;
 }
 
 namespace muse
@@ -55,9 +102,17 @@ namespace muse
 Texture::Texture(std::uint32_t width,
                  std::uint32_t height,
                  TextureFormat format,
-                 std::byte *data,
                  Sampler *sampler,
-                 std::uint32_t color_channels,
+                 std::int32_t index)
+    : Texture(Data(), width, height, format, sampler, index)
+{
+}
+
+Texture::Texture(const Data &data,
+                 std::uint32_t width,
+                 std::uint32_t height,
+                 TextureFormat format,
+                 Sampler *sampler,
                  std::int32_t index)
     : width_(width)
     , height_(height)
@@ -69,13 +124,19 @@ Texture::Texture(std::uint32_t width,
     glGenTextures(1, &handle_);
     glBindTexture(GL_TEXTURE_2D, handle_);
 
-    auto [internal_format, gl_format, gl_type] = to_opengl(color_channels,
-                                                           format_ != TextureFormat::RGBA && format_ != TextureFormat::DEPTH_COMPONENT,
-                                                           format_ == TextureFormat::DEPTH_COMPONENT);
+    auto gl_internal = to_opengl(format_);
+    auto gl_format = texture_format(gl_internal);
+    auto gl_type = to_opengl(gl_internal);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width_, height_, 0, gl_format, gl_type, data);
+    const auto &spec = sampler->specification();
+    if (spec.use_mipmaps)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(std::floor(std::log2(std::max(width_, height_)))) + 1);
+    }
 
-    if (sampler->specification().use_mipmaps)
+    glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, width_, height_, 0, gl_format, gl_type, data.empty() ? nullptr : reinterpret_cast<const float *>(data.data()));
+
+    if (spec.use_mipmaps)
     {
         glGenerateMipmap(GL_TEXTURE_2D);
     }
@@ -84,6 +145,8 @@ Texture::Texture(std::uint32_t width,
     glMakeTextureHandleResidentARB(bindless_handle_);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    LOG_INFO(Texture, "Texture created!");
 }
 
 Texture::~Texture()
@@ -121,5 +184,4 @@ std::int32_t Texture::index() const
 {
     return index_;
 }
-
 }

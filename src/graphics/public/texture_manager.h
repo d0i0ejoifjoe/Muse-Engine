@@ -3,6 +3,7 @@
 #include "graphics/public/cube_map.h"
 #include "graphics/public/sampler.h"
 #include "graphics/public/texture.h"
+#include "utils/public/file_manager.h"
 
 #include <cstdint>
 #include <memory>
@@ -20,7 +21,7 @@ class TextureManager
      *  Create a texture manager.
      *
      */
-    TextureManager();
+    TextureManager(FileManager *fmanager);
 
     /** Default destructor. */
     ~TextureManager() = default;
@@ -31,16 +32,16 @@ class TextureManager
      *
      *  @param filename Path to image.
      *  @param sampler Sampler to use (nullptr for default).
-     *  @param format Format of texture.
+     *  @param gamma_correct Whether to do gamma correction on image.
      *  @param flip_image Whether to flip image when loaded.
      *
      *  @return Pointer to newly created texture.
      *
      */
-    Texture *load(std::string_view filename,
-                  Sampler *sampler,
-                  TextureFormat format,
-                  bool flip_image);
+    Texture *load_texture(std::string_view filename,
+                          Sampler *sampler,
+                          bool gamma_correct,
+                          bool flip_image);
 
     /**
      *
@@ -50,18 +51,33 @@ class TextureManager
      *  @param width Width of texture.
      *  @param height Height of texture.
      *  @param sampler Sampler to use (nullptr for default).
-     *  @param color_channels Number of bytes per color.
      *  @param format Format of texture.
      *
      *  @return Pointer to newly created texture.
      *
      */
-    Texture *add(std::byte *data,
-                 std::uint32_t width,
-                 std::uint32_t height,
-                 Sampler *sampler,
-                 std::uint32_t color_channels,
-                 TextureFormat format);
+    Texture *add_texture(const Data &data,
+                         std::uint32_t width,
+                         std::uint32_t height,
+                         Sampler *sampler,
+                         TextureFormat format);
+
+    /**
+     *
+     *  Add new texture.
+     *
+     *  @param width Width of texture.
+     *  @param height Height of texture.
+     *  @param sampler Sampler to use (nullptr for default).
+     *  @param format Format of texture.
+     *
+     *  @return Pointer to newly created texture.
+     *
+     */
+    Texture *add_texture(std::uint32_t width,
+                         std::uint32_t height,
+                         Sampler *sampler,
+                         TextureFormat format);
 
     /**
      *
@@ -122,20 +138,21 @@ class TextureManager
      *  @param back_filename Path to back side image.
      *  @param sampler Sampler to use (nullptr for default).
      *  @param format Format of all images.
+     *  @param gamma_correct Whether to load all images with gamma correction.
      *  @param flip_images Whether to flip images when loaded.
      *
      *  @return Pointer to newly created cubemap.
      *
      */
-    CubeMap *load(std::string_view left_filename,
-                  std::string_view right_filename,
-                  std::string_view up_filename,
-                  std::string_view down_filename,
-                  std::string_view front_filename,
-                  std::string_view back_filename,
-                  Sampler *sampler,
-                  TextureFormat format,
-                  bool flip_images);
+    CubeMap *load_cubemap(std::string_view left_filename,
+                          std::string_view right_filename,
+                          std::string_view up_filename,
+                          std::string_view down_filename,
+                          std::string_view front_filename,
+                          std::string_view back_filename,
+                          Sampler *sampler,
+                          bool gamma_correct,
+                          bool flip_images);
 
     /**
      *
@@ -155,17 +172,32 @@ class TextureManager
      *  @return Pointer to newly created cubemap.
      *
      */
-    CubeMap *add(std::byte *left_data,
-                 std::byte *right_data,
-                 std::byte *up_data,
-                 std::byte *down_data,
-                 std::byte *front_data,
-                 std::byte *back_data,
-                 std::uint32_t width,
-                 std::uint32_t height,
-                 Sampler *sampler,
-                 std::uint32_t color_channels,
-                 TextureFormat format);
+    CubeMap *add_cubemap(const Data &left_data,
+                         const Data &right_data,
+                         const Data &up_data,
+                         const Data &down_data,
+                         const Data &front_data,
+                         const Data &back_data,
+                         std::uint32_t width,
+                         std::uint32_t height,
+                         Sampler *sampler,
+                         TextureFormat format);
+    /**
+     *
+     *  Create a cubemap.
+     *
+     *  @param width Width of all six images (needs to match for all images).
+     *  @param height Height of all six images (needs to match for all images).
+     *  @param sampler Sampler to use (nullptr for default).
+     *  @param format Format of all images.
+     *
+     *  @return Pointer to newly created cubemap.
+     *
+     */
+    CubeMap *add_cubemap(std::uint32_t width,
+                         std::uint32_t height,
+                         Sampler *sampler,
+                         TextureFormat format);
 
     /**
      *
@@ -255,6 +287,9 @@ class TextureManager
     std::size_t sampler_count() const;
 
   private:
+    /** File manager. */
+    FileManager *fmanager_;
+
     /** Textures */
     std::vector<std::unique_ptr<Texture>> textures_;
 

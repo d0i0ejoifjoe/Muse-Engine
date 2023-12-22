@@ -10,21 +10,20 @@ namespace muse
 
 class Material;
 class TextureManager;
+class MaterialMaps;
 
 /**
  *
- *  Structure that stores indices of material textures.
+ *  Structure that stores paths to all material map files.
  *
  */
-struct MaterialIndices
+struct MaterialPaths
 {
-    std::uint32_t albedo = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t normal = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t metallic = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t roughness = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t ao = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t specular = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t height = std::numeric_limits<std::uint32_t>::max();
+    std::string albedo = "";
+    std::string normal = "";
+    std::string metallic = "";
+    std::string roughness = "";
+    std::string ao = "";
 };
 
 /**
@@ -49,13 +48,25 @@ class MaterialManager
      *
      *  Add new material.
      *
-     *  @param indices Indices of all material's maps.
+     *  @param maps Pointers to all material's maps.
      *  @param name Name of material.
      *
      *  @return Pointer to newly created material.
      *
      */
-    Material *add(const MaterialIndices &indices, std::string_view name);
+    Material *add(const MaterialMaps &maps, std::string_view name);
+
+    /**
+     *
+     *  Load all maps and add new material.
+     *
+     *  @param paths Paths for all textures.
+     *  @param name Name of material.
+     *
+     *  @return Pointer to newly created material.
+     *
+     */
+    Material *load(const MaterialPaths &paths, std::string_view name);
 
     /**
      *

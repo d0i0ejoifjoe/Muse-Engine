@@ -53,7 +53,6 @@ Mesh::~Mesh()
 void Mesh::bind()
 {
     glBindVertexArray(handle_);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_.handle());
 }
 
 void Mesh::setup()
@@ -76,10 +75,10 @@ void Mesh::setup()
         index++;
     }
 
+    glBindVertexArray(0);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glBindVertexArray(0);
 }
 
 void Mesh::set_receive_shadows(bool receive_shadows)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/public/mesh.h"
+#include "utils/public/file_manager.h"
 #include "utils/public/utils.h"
 
 #include <functional>
@@ -36,7 +37,7 @@ class MeshManager
      *  Create mesh manager.
      *
      */
-    explicit MeshManager(TextureManager *tmanager, MaterialManager *mmanager);
+    explicit MeshManager(FileManager *fmanager, TextureManager *tmanager, MaterialManager *mmanager);
 
     /** Default destructor. */
     ~MeshManager() = default;
@@ -54,8 +55,8 @@ class MeshManager
      */
     MUSE_NODISCARD std::vector<Mesh *> load(const std::string &filename,
                                             const AnimationCallback &animation_callback,
-                                            bool load_materials,
-                                            bool flip_uvs);
+                                            bool load_materials = true,
+                                            bool flip_uvs = false);
 
     /**
      *
@@ -88,7 +89,7 @@ class MeshManager
      */
     MUSE_NODISCARD Mesh *create(const std::vector<Vertex> &vertices,
                                 const std::vector<std::uint32_t> &indices,
-                                std::uint32_t material_index);
+                                std::uint32_t material_index = std::numeric_limits<std::uint32_t>::max());
 
   private:
     /** Meshes. */
@@ -99,6 +100,9 @@ class MeshManager
 
     /** Material manager. */
     MaterialManager *mmanager_;
+
+    /** File manager. */
+    FileManager *fmanager_;
 };
 
 }

@@ -15,6 +15,9 @@
 namespace muse
 {
 
+/** Alias for a data buffer. */
+using Data = std::vector<std::byte>;
+
 /** Alias for a pair. */
 template <class T>
 using Pair = std::pair<T, T>;

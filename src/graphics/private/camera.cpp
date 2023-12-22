@@ -25,6 +25,8 @@ Camera::Camera(CameraType type, std::uint32_t width, std::uint32_t height, float
 {
     recreate_proj();
     recreate_view();
+
+    LOG_INFO(Camera, "Camera created!");
 }
 
 void Camera::recreate_direction()

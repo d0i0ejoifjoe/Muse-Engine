@@ -20,15 +20,11 @@ struct MaterialMaps
     Texture *metallic;
     Texture *roughness;
     Texture *ao;
-    Texture *specular;
-    Texture *height; // Ambient occulusion map
 };
 
 /**
  *
- *  Class that stores all indices to all different kinds of maps.
- *  Then these indices get submitted to shader to find the maps
- *  and do all of the calculations needed.
+ *  Class that stores pointers to all necessery texture maps for an PBR material.
  *
  */
 class Material
@@ -82,24 +78,6 @@ class Material
 
     /**
      *
-     *  Get specular map.
-     *
-     *  @return Pointer to specular map.
-     *
-     */
-    Texture *specular() const;
-
-    /**
-     *
-     *  Get height map.
-     *
-     *  @return Pointer to height map.
-     *
-     */
-    Texture *height() const;
-
-    /**
-     *
      *  Get ao (ambient occulusion) map.
      *
      *  @return Pointer to AO map.
@@ -117,7 +95,7 @@ class Material
     std::string name() const;
 
   private:
-    /** Indices. */
+    /** Maps. */
     MaterialMaps maps_;
 
     /** Name. */

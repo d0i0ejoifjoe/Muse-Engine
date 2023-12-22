@@ -1,6 +1,7 @@
 #include "graphics/public/shader_system.h"
 
 #include "log/public/logger.h"
+#include "utils/public/file_manager.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -100,8 +101,9 @@ void check_validation_status(GLuint handle)
 namespace muse
 {
 
-ShaderSystem::ShaderSystem(std::string_view vertex_shader_source, std::string_view fragment_shader_source,
-                           std::optional<std::string_view> geometry_shader_source)
+ShaderSystem::ShaderSystem(const std::string &vertex_shader_source,
+                           const std::string &fragment_shader_source,
+                           std::optional<std::string> geometry_shader_source)
     : handle_(0)
     , uniform_map_()
 {
@@ -149,6 +151,8 @@ ShaderSystem::ShaderSystem(std::string_view vertex_shader_source, std::string_vi
 
     glValidateProgram(handle_);
     check_validation_status(handle_);
+
+    LOG_INFO(ShaderSystem, "Shader system created!");
 }
 
 ShaderSystem::~ShaderSystem()
@@ -186,6 +190,16 @@ void ShaderSystem::set_value(const std::string &uniform_name, const Matrix4 &val
     glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], 1, GL_TRUE, value.data());
 }
 
+void ShaderSystem::set_value(const std::string &uniform_name, const Vector3 &value)
+{
+    glProgramUniform3fv(handle_, uniform_map_[uniform_name], 1, &value.x);
+}
+
+void ShaderSystem::set_value(const std::string &uniform_name, bool value)
+{
+    glProgramUniform1i(handle_, uniform_map_[uniform_name], value);
+}
+
 void ShaderSystem::set_value(const std::string &uniform_name, std::uint64_t value)
 {
     glProgramUniformHandleui64ARB(handle_, uniform_map_[uniform_name], value);
@@ -196,4 +210,8 @@ void ShaderSystem::set_value(const std::string &uniform_name, const std::vector<
     glProgramUniformMatrix4fv(handle_, uniform_map_[uniform_name], static_cast<GLsizei>(value.size()), GL_TRUE, reinterpret_cast<const float *>(value.data()));
 }
 
+void ShaderSystem::set_value(const std::string &uniform_name, float value)
+{
+    glProgramUniform1f(handle_, uniform_map_[uniform_name], value);
+}
 }
